@@ -68,56 +68,78 @@ interface PipelineCanvasProps {
 }
 
 export default function PipelineCanvas({ nodes, onNodeClick }: PipelineCanvasProps) {
+  const doneCount = nodes.filter(n => n.status === "done").length;
   return (
-    <div className="w-full overflow-x-auto">
-      <div className="flex items-center min-w-[700px] px-4 py-6">
-        {nodes.map((node, i) => {
-          const s = STATUS_STYLES[node.status];
-          const isClickable = node.status === "waiting-approval" && onNodeClick;
-          const nextNode = nodes[i + 1];
-          const edgeActive = node.status === "running" || node.status === "done";
-          const edgeDone = node.status === "done" && nextNode?.status !== "pending";
+    <div className="w-full">
+      {/* Header strip */}
+      <div className="flex items-center justify-between px-5 pt-4 pb-1">
+        <div className="text-[10px] font-bold uppercase tracking-widest text-t3">
+          Semantic Intelligence Pipeline
+        </div>
+        <div className="text-[10px] font-semibold text-t3">
+          {doneCount}/{nodes.length} layers
+        </div>
+      </div>
+      <div className="w-full overflow-x-auto">
+        <div
+          className="flex items-start px-4 py-5"
+          style={{ minWidth: Math.max(700, nodes.length * 104) }}
+        >
+          {nodes.map((node, i) => {
+            const s = STATUS_STYLES[node.status];
+            const isClickable = node.status === "waiting-approval" && onNodeClick;
+            const nextNode = nodes[i + 1];
+            const edgeActive = node.status === "running" || node.status === "done";
+            const edgeDone = node.status === "done" && nextNode?.status !== "pending";
+            const glow = node.status === "running" || node.status === "waiting-approval";
 
-          return (
-            <div key={node.id} className="flex items-center flex-1">
-              {/* Node */}
-              <div className="flex flex-col items-center gap-2 flex-shrink-0" style={{ minWidth: 80 }}>
-                <div
-                  className={`relative w-12 h-12 rounded-2xl flex items-center justify-center text-xl border-2 transition-all duration-300 ${isClickable ? "cursor-pointer hover:scale-110" : ""} ${node.status === "waiting-approval" ? "animate-pulse" : ""}`}
-                  style={{
-                    background: s.bg,
-                    borderColor: s.ring,
-                    boxShadow: node.status !== "pending" ? `0 0 0 3px ${s.ring}22` : "none",
-                  }}
-                  onClick={() => isClickable && onNodeClick(node)}
-                  title={node.status === "waiting-approval" ? "Click to review & approve" : undefined}
-                >
-                  {node.icon}
-                  <NodeStatusDot status={node.status} />
+            return (
+              <div key={node.id} className="flex items-start flex-1">
+                {/* Node */}
+                <div className="flex flex-col items-center gap-2 flex-shrink-0" style={{ minWidth: 92 }}>
+                  <div
+                    className={`relative w-12 h-12 rounded-2xl flex items-center justify-center text-xl border-2 transition-all duration-300 ${isClickable ? "cursor-pointer hover:scale-110" : ""} ${node.status === "waiting-approval" ? "animate-pulse" : ""}`}
+                    style={{
+                      background: s.bg,
+                      borderColor: s.ring,
+                      boxShadow: glow
+                        ? `0 0 0 4px ${s.ring}22, 0 0 14px ${s.ring}66`
+                        : node.status !== "pending" ? `0 0 0 3px ${s.ring}22` : "none",
+                    }}
+                    onClick={() => isClickable && onNodeClick(node)}
+                    title={node.status === "waiting-approval" ? "Click to review & approve" : undefined}
+                  >
+                    {node.icon}
+                    <NodeStatusDot status={node.status} />
+                  </div>
+                  <div className="text-center px-1" style={{ maxWidth: 92 }}>
+                    <div className="text-[10.5px] font-semibold text-t1 leading-tight">{node.label}</div>
+                    {node.metric && (
+                      <div className="text-[9px] font-semibold mt-0.5 leading-tight" style={{ color: s.text }}>
+                        {node.metric}
+                      </div>
+                    )}
+                    {node.status === "waiting-approval" && (
+                      <div className="text-[9px] font-bold text-accent mt-0.5 animate-pulse">Tap to review</div>
+                    )}
+                  </div>
                 </div>
-                <div className="text-center px-1">
-                  <div className="text-[11px] font-semibold text-t1 leading-tight">{node.label}</div>
-                  {node.metric && (
-                    <div className="text-[9px] font-semibold mt-0.5" style={{ color: s.text }}>{node.metric}</div>
-                  )}
-                  {node.status === "waiting-approval" && (
-                    <div className="text-[9px] font-bold text-accent mt-0.5 animate-pulse">Tap to review</div>
-                  )}
-                </div>
+
+                {/* Edge to next node */}
+                {i < nodes.length - 1 && (
+                  <div className="pt-5 flex-1 flex items-center">
+                    <EdgeLine
+                      from={node.status}
+                      to={nodes[i + 1].status}
+                      active={edgeActive}
+                      done={edgeDone}
+                    />
+                  </div>
+                )}
               </div>
-
-              {/* Edge to next node */}
-              {i < nodes.length - 1 && (
-                <EdgeLine
-                  from={node.status}
-                  to={nodes[i + 1].status}
-                  active={edgeActive}
-                  done={edgeDone}
-                />
-              )}
-            </div>
-          );
-        })}
+            );
+          })}
+        </div>
       </div>
     </div>
   );

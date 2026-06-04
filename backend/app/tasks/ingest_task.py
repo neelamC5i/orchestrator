@@ -89,16 +89,25 @@ def run_ingest_pipeline(self, job_id):  # noqa: C901
     corpus_dir = f"corpus_store/{job_id}"  # placeholder; overwritten below
     processed_dir = ""  # set after corpus_dir is resolved
 
+    # 14-layer semantic-intelligence pipeline. Layer 1 (File Upload) lives in the
+    # Workspace, so this pipeline begins at layer 2. Indices are 0-13; the trailing
+    # FAISS embedding step is the operational tail of graph construction. The
+    # steps[] shape and the terminal graph_done contract are unchanged.
     steps = [
-        {"id": "extract",    "label": "1 · Extracting corpus",           "status": "pending", "pct": 0, "detail": ""},
-        {"id": "chunk",      "label": "2 · Cleaning & chunking",         "status": "pending", "pct": 0, "detail": ""},
-        {"id": "entities",   "label": "3 · NLP entity extraction",       "status": "pending", "pct": 0, "detail": ""},
-        {"id": "eda",        "label": "4 · EDA / quality analysis",      "status": "pending", "pct": 0, "detail": ""},
-        {"id": "canonical",  "label": "5 · Building canonical graph",    "status": "pending", "pct": 0, "detail": ""},
-        {"id": "resolve",    "label": "6 · Entity resolution",           "status": "pending", "pct": 0, "detail": ""},
-        {"id": "crosslink",  "label": "7 · Cross-source linking",        "status": "pending", "pct": 0, "detail": ""},
-        {"id": "graph_wiki", "label": "8 · Graph & wiki build",          "status": "pending", "pct": 0, "detail": ""},
-        {"id": "embed",      "label": "9 · Embedding & FAISS indexing",  "status": "pending", "pct": 0, "detail": ""},
+        {"id": "extract",        "label": "2 · Ingestion & extraction",           "status": "pending", "pct": 0, "detail": ""},
+        {"id": "clean",          "label": "3 · Cleaning & normalization",         "status": "pending", "pct": 0, "detail": ""},
+        {"id": "chunk",          "label": "4 · Chunking & segmentation",          "status": "pending", "pct": 0, "detail": ""},
+        {"id": "metadata_intel", "label": "5 · Metadata intelligence engine",     "status": "pending", "pct": 0, "detail": ""},
+        {"id": "entities",       "label": "6 · Entity & relationship extraction", "status": "pending", "pct": 0, "detail": ""},
+        {"id": "semantic_learn", "label": "7 · Semantic learning layer",          "status": "pending", "pct": 0, "detail": ""},
+        {"id": "eda",            "label": "8 · EDA intelligence engine",          "status": "pending", "pct": 0, "detail": ""},
+        {"id": "ml_validation",  "label": "9 · ML validation & accuracy",         "status": "pending", "pct": 0, "detail": ""},
+        {"id": "ontology",       "label": "10 · Ontology & semantic governance",  "status": "pending", "pct": 0, "detail": ""},
+        {"id": "canonical",      "label": "11 · Canonicalization & resolution",   "status": "pending", "pct": 0, "detail": ""},
+        {"id": "graph_build",    "label": "12 · Knowledge graph construction",    "status": "pending", "pct": 0, "detail": ""},
+        {"id": "graph_validate", "label": "13 · Graph validation & consistency",  "status": "pending", "pct": 0, "detail": ""},
+        {"id": "wiki",           "label": "14 · Wiki & explainability",           "status": "pending", "pct": 0, "detail": ""},
+        {"id": "embed",          "label": "15 · Embedding & FAISS indexing",      "status": "pending", "pct": 0, "detail": ""},
     ]
 
     # Fetch job record — read corpus_dir from metadata
@@ -139,6 +148,10 @@ def run_ingest_pipeline(self, job_id):  # noqa: C901
     from app.modules.graph.graph_builder import GraphBuilder
     from app.modules.wiki.wiki_builder import WikiBuilder
     from app.modules.data_curation.faiss_store import FaissStore
+    from app.modules.intelligence import (
+        run_metadata_intelligence, run_semantic_learning, run_ml_validation,
+        run_ontology_governance, run_graph_validation,
+    )
 
     graph_builder = GraphBuilder(corpus_dir)
     wiki_builder = WikiBuilder(corpus_dir)
@@ -155,7 +168,7 @@ def run_ingest_pipeline(self, job_id):  # noqa: C901
         _update_steps(job_id, steps, 0, "failed", {"error_message": "no_files_found"})
         return
 
-    # Stage 1: Extract
+    # ── Layer 2 (idx 0): Ingestion & extraction ──────────────────────────────
     steps[0]["status"] = "running"
     _update_steps(job_id, steps, 0, "ingesting")
     all_corpora = {}
@@ -172,32 +185,52 @@ def run_ingest_pipeline(self, job_id):  # noqa: C901
                 json.dump({"ext": ext, **corpus}, f)
         except Exception:
             pass
-    steps[0]["status"] = "done"
-    steps[0]["pct"] = 100
+    steps[0]["status"] = "done"; steps[0]["pct"] = 100
     steps[0]["detail"] = f"{len(all_corpora)} files extracted"
     _update_steps(job_id, steps, 1, "ingesting")
 
-    # Stage 2: Clean + chunk
+    # ── Layer 3 (idx 1): Cleaning & normalization ────────────────────────────
     steps[1]["status"] = "running"
     _update_steps(job_id, steps, 1, "ingesting")
-    all_chunks_by_file = {}
-    all_validations = {}
+    cleaned_by_file = {}
     for file_id, (ext, corpus) in all_corpora.items():
-        raw_text = corpus.get("plain_text", "") or ""
-        cleaned = clean_text(raw_text)
-        chunks = chunk_text(cleaned)
-        validation = validate_chunking(chunks, len(cleaned.split()), target_overlap=60)
-        all_chunks_by_file[file_id] = chunks
-        all_validations[file_id] = validation
-    total_chunks = sum(len(c) for c in all_chunks_by_file.values())
-    steps[1]["status"] = "done"
-    steps[1]["pct"] = 100
-    steps[1]["detail"] = f"{total_chunks} chunks from {len(all_corpora)} files"
+        cleaned_by_file[file_id] = clean_text(corpus.get("plain_text", "") or "")
+    steps[1]["status"] = "done"; steps[1]["pct"] = 100
+    steps[1]["detail"] = f"{len(cleaned_by_file)} documents normalized"
     _update_steps(job_id, steps, 2, "ingesting")
 
-    # Stage 3: Entity extraction
+    # ── Layer 4 (idx 2): Chunking & structural segmentation ──────────────────
     steps[2]["status"] = "running"
     _update_steps(job_id, steps, 2, "ingesting")
+    all_chunks_by_file = {}
+    all_validations = {}
+    for file_id, cleaned in cleaned_by_file.items():
+        chunks = chunk_text(cleaned)
+        all_chunks_by_file[file_id] = chunks
+        all_validations[file_id] = validate_chunking(chunks, len(cleaned.split()), target_overlap=60)
+    total_chunks = sum(len(c) for c in all_chunks_by_file.values())
+    steps[2]["status"] = "done"; steps[2]["pct"] = 100
+    steps[2]["detail"] = f"{total_chunks} chunks from {len(all_chunks_by_file)} files"
+    _update_steps(job_id, steps, 3, "ingesting")
+
+    # ── Layer 5 (idx 3): Metadata intelligence engine (non-fatal) ────────────
+    steps[3]["status"] = "running"
+    _update_steps(job_id, steps, 3, "ingesting")
+    try:
+        md_summary = run_metadata_intelligence(corpus_dir, all_corpora, all_chunks_by_file)
+        steps[3]["detail"] = (
+            f"{md_summary.get('tabular_file_count', 0)} tabular files, "
+            f"{md_summary.get('fk_candidate_count', 0)} FK candidates"
+        )
+    except Exception as exc:
+        logger.warning("metadata_intelligence failed: %s", exc)
+        steps[3]["detail"] = "skipped"
+    steps[3]["status"] = "done"; steps[3]["pct"] = 100
+    _update_steps(job_id, steps, 4, "ingesting")
+
+    # ── Layer 6 (idx 4): Entity & relationship extraction ────────────────────
+    steps[4]["status"] = "running"
+    _update_steps(job_id, steps, 4, "ingesting")
     all_entities_by_file = {}
     all_rels_by_file = {}
     for file_id, chunks in all_chunks_by_file.items():
@@ -215,14 +248,30 @@ def run_ingest_pipeline(self, job_id):  # noqa: C901
         all_rels_by_file[file_id] = sc_rels.get("relationships", relationships)
     total_ents = sum(len(v) for v in all_entities_by_file.values())
     total_rels = sum(len(v) for v in all_rels_by_file.values())
-    steps[2]["status"] = "done"
-    steps[2]["pct"] = 100
-    steps[2]["detail"] = f"{total_ents} entities, {total_rels} relationships"
-    _update_steps(job_id, steps, 3, "ingesting")
+    steps[4]["status"] = "done"; steps[4]["pct"] = 100
+    steps[4]["detail"] = f"{total_ents} entities, {total_rels} relationships"
+    _update_steps(job_id, steps, 5, "ingesting")
 
-    # Stage 4: EDA (non-fatal)
-    steps[3]["status"] = "running"
-    _update_steps(job_id, steps, 3, "ingesting")
+    # ── Layer 7 (idx 5): Semantic learning layer (non-fatal) ─────────────────
+    steps[5]["status"] = "running"
+    _update_steps(job_id, steps, 5, "ingesting")
+    try:
+        sl_summary = run_semantic_learning(
+            corpus_dir, all_entities_by_file, all_chunks_by_file, embed_store.embed_text
+        )
+        steps[5]["detail"] = (
+            f"{sl_summary.get('cluster_count', 0)} semantic clusters, "
+            f"{sl_summary.get('cooccurrence_pair_count', 0)} co-occurrence pairs"
+        )
+    except Exception as exc:
+        logger.warning("semantic_learning failed: %s", exc)
+        steps[5]["detail"] = "skipped"
+    steps[5]["status"] = "done"; steps[5]["pct"] = 100
+    _update_steps(job_id, steps, 6, "ingesting")
+
+    # ── Layer 8 (idx 6): EDA intelligence engine (non-fatal) ─────────────────
+    steps[6]["status"] = "running"
+    _update_steps(job_id, steps, 6, "ingesting")
     eda_results = {}
     for file_id, (ext, corpus) in all_corpora.items():
         try:
@@ -237,14 +286,46 @@ def run_ingest_pipeline(self, job_id):  # noqa: C901
             )
         except Exception as exc:
             logger.warning("run_file_eda failed for %s: %s", file_id, exc)
-    steps[3]["status"] = "done"
-    steps[3]["pct"] = 100
-    steps[3]["detail"] = f"EDA completed for {len(eda_results)}/{len(all_corpora)} files"
-    _update_steps(job_id, steps, 4, "ingesting")
+    steps[6]["status"] = "done"; steps[6]["pct"] = 100
+    steps[6]["detail"] = f"EDA completed for {len(eda_results)}/{len(all_corpora)} files"
+    _update_steps(job_id, steps, 7, "ingesting")
 
-    # Stage 5: Canonical graph
-    steps[4]["status"] = "running"
-    _update_steps(job_id, steps, 4, "ingesting")
+    # ── Layer 9 (idx 7): ML validation & accuracy (non-fatal) ────────────────
+    steps[7]["status"] = "running"
+    _update_steps(job_id, steps, 7, "ingesting")
+    try:
+        mlv = run_ml_validation(corpus_dir, all_entities_by_file, all_rels_by_file, eda_results)
+        steps[7]["detail"] = (
+            f"F1≈{mlv.get('f1_proxy', 0)}, hallucination risk≈{mlv.get('hallucination_risk', 0)}"
+        )
+    except Exception as exc:
+        logger.warning("ml_validation failed: %s", exc)
+        steps[7]["detail"] = "skipped"
+    steps[7]["status"] = "done"; steps[7]["pct"] = 100
+    _update_steps(job_id, steps, 8, "ingesting")
+
+    # ── Layer 10 (idx 8): Ontology & semantic governance (non-fatal) ─────────
+    # Derive the taxonomy + relationship constraints from the already-extracted
+    # entities/relationships (no canonical graph required yet — preserves layer
+    # ordering). The summary is reused by the graph-validation layer below.
+    steps[8]["status"] = "running"
+    _update_steps(job_id, steps, 8, "ingesting")
+    ontology_artifact = None
+    try:
+        ontology_artifact = run_ontology_governance(corpus_dir, all_entities_by_file, all_rels_by_file)
+        steps[8]["detail"] = (
+            f"{ontology_artifact.get('type_count', 0)} entity types, "
+            f"{ontology_artifact.get('violation_count', 0)} constraint violations"
+        )
+    except Exception as exc:
+        logger.warning("ontology_governance failed: %s", exc)
+        steps[8]["detail"] = "skipped"
+    steps[8]["status"] = "done"; steps[8]["pct"] = 100
+    _update_steps(job_id, steps, 9, "ingesting")
+
+    # ── Layer 11 (idx 9): Canonicalization & semantic resolution ─────────────
+    steps[9]["status"] = "running"
+    _update_steps(job_id, steps, 9, "ingesting")
     all_canonical_nodes = {}
     all_canonical_edges = {}
     for file_id in all_corpora:
@@ -259,15 +340,6 @@ def run_ingest_pipeline(self, job_id):  # noqa: C901
             cn, ce = [], []
         all_canonical_nodes[file_id] = cn
         all_canonical_edges[file_id] = ce
-    total_cn = sum(len(v) for v in all_canonical_nodes.values())
-    steps[4]["status"] = "done"
-    steps[4]["pct"] = 100
-    steps[4]["detail"] = f"{total_cn} canonical nodes"
-    _update_steps(job_id, steps, 5, "ingesting")
-
-    # Stage 6: Entity resolution
-    steps[5]["status"] = "running"
-    _update_steps(job_id, steps, 5, "ingesting")
     resolved_nodes_by_file = {}
     resolution_reports_by_file = {}
     for file_id in all_corpora:
@@ -284,15 +356,15 @@ def run_ingest_pipeline(self, job_id):  # noqa: C901
             logger.warning("resolve failed for %s: %s", file_id, exc)
             resolved_nodes_by_file[file_id] = cn
             resolution_reports_by_file[file_id] = {}
+    total_cn = sum(len(v) for v in all_canonical_nodes.values())
     total_resolved = sum(len(v) for v in resolved_nodes_by_file.values())
-    steps[5]["status"] = "done"
-    steps[5]["pct"] = 100
-    steps[5]["detail"] = f"{total_resolved} resolved nodes"
-    _update_steps(job_id, steps, 6, "ingesting")
+    steps[9]["status"] = "done"; steps[9]["pct"] = 100
+    steps[9]["detail"] = f"{total_cn} canonical nodes → {total_resolved} resolved"
+    _update_steps(job_id, steps, 10, "ingesting")
 
-    # Stage 7: Cross-source linking (non-fatal)
-    steps[6]["status"] = "running"
-    _update_steps(job_id, steps, 6, "ingesting")
+    # ── Layer 12 (idx 10): Knowledge graph construction ──────────────────────
+    steps[10]["status"] = "running"
+    _update_steps(job_id, steps, 10, "ingesting")
     cross_link_count = 0
     try:
         canonical_graph = graph_builder.get_canonical_graph()
@@ -305,15 +377,6 @@ def run_ingest_pipeline(self, job_id):  # noqa: C901
             cross_link_count += len(cl.get("accepted_links", []))
     except Exception as exc:
         logger.warning("link_cross_source failed: %s", exc)
-    steps[6]["status"] = "done"
-    steps[6]["pct"] = 100
-    steps[6]["detail"] = f"{cross_link_count} cross-source links accepted"
-    _update_steps(job_id, steps, 7, "ingesting")
-
-    # Stage 8: Graph upsert + wiki
-    steps[7]["status"] = "running"
-    _update_steps(job_id, steps, 7, "ingesting")
-    wiki_count = 0
     for file_id in all_corpora:
         resolved_nodes = resolved_nodes_by_file.get(file_id, [])
         canonical_edges = all_canonical_edges.get(file_id, [])
@@ -324,6 +387,31 @@ def run_ingest_pipeline(self, job_id):  # noqa: C901
             )
         except Exception as exc:
             logger.warning("graph_builder failed for %s: %s", file_id, exc)
+    steps[10]["status"] = "done"; steps[10]["pct"] = 100
+    steps[10]["detail"] = f"Graph constructed; {cross_link_count} cross-source links"
+    _update_steps(job_id, steps, 11, "ingesting")
+
+    # ── Layer 13 (idx 11): Graph validation & consistency (non-fatal) ────────
+    steps[11]["status"] = "running"
+    _update_steps(job_id, steps, 11, "ingesting")
+    try:
+        gv = run_graph_validation(corpus_dir, graph_builder, ontology_artifact)
+        steps[11]["detail"] = (
+            f"trust {gv.get('trust_score', 0)}, "
+            f"{gv.get('orphan_node_count', 0)} orphans, {gv.get('cycle_count', 0)} cycles"
+        )
+    except Exception as exc:
+        logger.warning("graph_validation failed: %s", exc)
+        steps[11]["detail"] = "skipped"
+    steps[11]["status"] = "done"; steps[11]["pct"] = 100
+    _update_steps(job_id, steps, 12, "ingesting")
+
+    # ── Layer 14 (idx 12): Wiki & explainability generation ──────────────────
+    steps[12]["status"] = "running"
+    _update_steps(job_id, steps, 12, "ingesting")
+    wiki_count = 0
+    for file_id in all_corpora:
+        resolved_nodes = resolved_nodes_by_file.get(file_id, [])
         try:
             cg = graph_builder.get_canonical_graph()
             node_ids = [n.get("canonical_id") or n.get("id") for n in resolved_nodes
@@ -332,25 +420,23 @@ def run_ingest_pipeline(self, job_id):  # noqa: C901
             wiki_count += len(node_ids)
         except Exception as exc:
             logger.warning("wiki_builder failed for %s: %s", file_id, exc)
-    steps[7]["status"] = "done"
-    steps[7]["pct"] = 100
-    steps[7]["detail"] = f"Graph upserted; {wiki_count} wiki pages built"
-    _update_steps(job_id, steps, 8, "ingesting")
+    steps[12]["status"] = "done"; steps[12]["pct"] = 100
+    steps[12]["detail"] = f"{wiki_count} wiki pages built"
+    _update_steps(job_id, steps, 13, "ingesting")
 
-    # Stage 9: Embed
-    steps[8]["status"] = "running"
-    _update_steps(job_id, steps, 8, "ingesting")
+    # ── Layer 15 (idx 13): Embedding & FAISS indexing — terminal ─────────────
+    steps[13]["status"] = "running"
+    _update_steps(job_id, steps, 13, "ingesting")
     embed_count = 0
     for file_id, chunks in all_chunks_by_file.items():
         try:
             embed_count += embed_store.add_chunks(file_id, chunks)
         except Exception as exc:
             logger.warning("embed failed for %s: %s", file_id, exc)
-    steps[8]["status"] = "done"
-    steps[8]["pct"] = 100
-    steps[8]["detail"] = f"{embed_count} chunks indexed in FAISS"
+    steps[13]["status"] = "done"; steps[13]["pct"] = 100
+    steps[13]["detail"] = f"{embed_count} chunks indexed in FAISS"
 
-    _update_steps(job_id, steps, 8, "graph_done", {
+    _update_steps(job_id, steps, 13, "graph_done", {
         "entity_count": total_ents, "file_count": len(all_corpora),
     })
     logger.info("run_ingest_pipeline %s done in %ds", job_id, int(time.time() - started))

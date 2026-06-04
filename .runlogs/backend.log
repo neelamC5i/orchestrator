@@ -1,0 +1,285 @@
+nohup: ignoring input
+/tmp/orchestrator_backend_venv/lib/python3.12/site-packages/pydantic/_internal/_fields.py:132: UserWarning: Field "model_id" in ModelInfo has conflict with protected namespace "model_".
+
+You may be able to resolve this warning by setting `model_config['protected_namespaces'] = ()`.
+  warnings.warn(
+/tmp/orchestrator_backend_venv/lib/python3.12/site-packages/pydantic/_internal/_fields.py:132: UserWarning: Field "model_name" in ModelRecommendationCard has conflict with protected namespace "model_".
+
+You may be able to resolve this warning by setting `model_config['protected_namespaces'] = ()`.
+  warnings.warn(
+/tmp/orchestrator_backend_venv/lib/python3.12/site-packages/pydantic/_internal/_fields.py:132: UserWarning: Field "model_recommendations" in OrchestratorOutput has conflict with protected namespace "model_".
+
+You may be able to resolve this warning by setting `model_config['protected_namespaces'] = ()`.
+  warnings.warn(
+/tmp/orchestrator_backend_venv/lib/python3.12/site-packages/pydantic/_internal/_fields.py:132: UserWarning: Field "model_overrides" in AskRequest has conflict with protected namespace "model_".
+
+You may be able to resolve this warning by setting `model_config['protected_namespaces'] = ()`.
+  warnings.warn(
+/tmp/orchestrator_backend_venv/lib/python3.12/site-packages/pydantic/_internal/_fields.py:132: UserWarning: Field "model_id" in ApproveInstallRequest has conflict with protected namespace "model_".
+
+You may be able to resolve this warning by setting `model_config['protected_namespaces'] = ()`.
+  warnings.warn(
+/tmp/orchestrator_backend_venv/lib/python3.12/site-packages/pydantic/_internal/_fields.py:132: UserWarning: Field "model_id" in EvaluationRequest has conflict with protected namespace "model_".
+
+You may be able to resolve this warning by setting `model_config['protected_namespaces'] = ()`.
+  warnings.warn(
+/tmp/orchestrator_backend_venv/lib/python3.12/site-packages/pydantic/_internal/_fields.py:132: UserWarning: Field "model_id" in FeedbackRequest has conflict with protected namespace "model_".
+
+You may be able to resolve this warning by setting `model_config['protected_namespaces'] = ()`.
+  warnings.warn(
+INFO:     Started server process [1817551]
+INFO:     Waiting for application startup.
+INFO:     Application startup complete.
+INFO:     Uvicorn running on http://0.0.0.0:8000 (Press CTRL+C to quit)
+INFO:     127.0.0.1:38434 - "GET /health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:45668 - "GET /api/v1/models HTTP/1.1" 200 OK
+INFO:     127.0.0.1:45668 - "GET /api/v1/models HTTP/1.1" 200 OK
+INFO:     127.0.0.1:45670 - "POST /api/v1/data/ingest HTTP/1.1" 200 OK
+INFO:     127.0.0.1:45674 - "GET /api/v1/data/progress/5f8d7f5d-626c-4618-9139-5bf39954299f HTTP/1.1" 200 OK
+The garbage collector is trying to clean up non-checked-in connection <AdaptedConnection <asyncpg.connection.Connection object at 0x7977461a8c80>>, which will be terminated.  Please ensure that SQLAlchemy pooled connections are returned to the pool explicitly, either by calling ``close()`` or by using appropriate context managers to manage their lifecycle.
+/usr/lib/python3.12/ssl.py:862: SAWarning: The garbage collector is trying to clean up non-checked-in connection <AdaptedConnection <asyncpg.connection.Connection object at 0x7977461a8c80>>, which will be terminated.  Please ensure that SQLAlchemy pooled connections are returned to the pool explicitly, either by calling ``close()`` or by using appropriate context managers to manage their lifecycle.
+  def write(self, data):
+INFO:     127.0.0.1:45670 - "GET /api/v1/models HTTP/1.1" 200 OK
+INFO:     127.0.0.1:45674 - "GET /api/v1/models HTTP/1.1" 200 OK
+INFO:     127.0.0.1:45674 - "GET /api/v1/data/progress/5f8d7f5d-626c-4618-9139-5bf39954299f HTTP/1.1" 200 OK
+INFO:     127.0.0.1:45674 - "GET /api/v1/data/progress/5f8d7f5d-626c-4618-9139-5bf39954299f HTTP/1.1" 200 OK
+INFO:     127.0.0.1:45674 - "GET /api/v1/data/progress/5f8d7f5d-626c-4618-9139-5bf39954299f HTTP/1.1" 200 OK
+INFO:     127.0.0.1:45674 - "GET /api/v1/data/progress/5f8d7f5d-626c-4618-9139-5bf39954299f HTTP/1.1" 200 OK
+The garbage collector is trying to clean up non-checked-in connection <AdaptedConnection <asyncpg.connection.Connection object at 0x7977461eb980>>, which will be terminated.  Please ensure that SQLAlchemy pooled connections are returned to the pool explicitly, either by calling ``close()`` or by using appropriate context managers to manage their lifecycle.
+/usr/lib/python3.12/ssl.py:862: SAWarning: The garbage collector is trying to clean up non-checked-in connection <AdaptedConnection <asyncpg.connection.Connection object at 0x7977461eb980>>, which will be terminated.  Please ensure that SQLAlchemy pooled connections are returned to the pool explicitly, either by calling ``close()`` or by using appropriate context managers to manage their lifecycle.
+  def write(self, data):
+The garbage collector is trying to clean up non-checked-in connection <AdaptedConnection <asyncpg.connection.Connection object at 0x7977461ea120>>, which will be terminated.  Please ensure that SQLAlchemy pooled connections are returned to the pool explicitly, either by calling ``close()`` or by using appropriate context managers to manage their lifecycle.
+/usr/lib/python3.12/ssl.py:862: SAWarning: The garbage collector is trying to clean up non-checked-in connection <AdaptedConnection <asyncpg.connection.Connection object at 0x7977461ea120>>, which will be terminated.  Please ensure that SQLAlchemy pooled connections are returned to the pool explicitly, either by calling ``close()`` or by using appropriate context managers to manage their lifecycle.
+  def write(self, data):
+The garbage collector is trying to clean up non-checked-in connection <AdaptedConnection <asyncpg.connection.Connection object at 0x7977461e9e50>>, which will be terminated.  Please ensure that SQLAlchemy pooled connections are returned to the pool explicitly, either by calling ``close()`` or by using appropriate context managers to manage their lifecycle.
+/usr/lib/python3.12/ssl.py:862: SAWarning: The garbage collector is trying to clean up non-checked-in connection <AdaptedConnection <asyncpg.connection.Connection object at 0x7977461e9e50>>, which will be terminated.  Please ensure that SQLAlchemy pooled connections are returned to the pool explicitly, either by calling ``close()`` or by using appropriate context managers to manage their lifecycle.
+  def write(self, data):
+INFO:     127.0.0.1:45674 - "GET /api/v1/data/progress/5f8d7f5d-626c-4618-9139-5bf39954299f HTTP/1.1" 200 OK
+INFO:     127.0.0.1:45674 - "GET /api/v1/data/progress/5f8d7f5d-626c-4618-9139-5bf39954299f HTTP/1.1" 200 OK
+INFO:     127.0.0.1:45674 - "GET /api/v1/data/progress/5f8d7f5d-626c-4618-9139-5bf39954299f HTTP/1.1" 200 OK
+INFO:     127.0.0.1:45674 - "GET /api/v1/data/progress/5f8d7f5d-626c-4618-9139-5bf39954299f HTTP/1.1" 200 OK
+The garbage collector is trying to clean up non-checked-in connection <AdaptedConnection <asyncpg.connection.Connection object at 0x7977461eb020>>, which will be terminated.  Please ensure that SQLAlchemy pooled connections are returned to the pool explicitly, either by calling ``close()`` or by using appropriate context managers to manage their lifecycle.
+/usr/lib/python3.12/json/decoder.py:353: SAWarning: The garbage collector is trying to clean up non-checked-in connection <AdaptedConnection <asyncpg.connection.Connection object at 0x7977461eb020>>, which will be terminated.  Please ensure that SQLAlchemy pooled connections are returned to the pool explicitly, either by calling ``close()`` or by using appropriate context managers to manage their lifecycle.
+  obj, end = self.scan_once(s, idx)
+The garbage collector is trying to clean up non-checked-in connection <AdaptedConnection <asyncpg.connection.Connection object at 0x7977461ea990>>, which will be terminated.  Please ensure that SQLAlchemy pooled connections are returned to the pool explicitly, either by calling ``close()`` or by using appropriate context managers to manage their lifecycle.
+/usr/lib/python3.12/json/decoder.py:353: SAWarning: The garbage collector is trying to clean up non-checked-in connection <AdaptedConnection <asyncpg.connection.Connection object at 0x7977461ea990>>, which will be terminated.  Please ensure that SQLAlchemy pooled connections are returned to the pool explicitly, either by calling ``close()`` or by using appropriate context managers to manage their lifecycle.
+  obj, end = self.scan_once(s, idx)
+The garbage collector is trying to clean up non-checked-in connection <AdaptedConnection <asyncpg.connection.Connection object at 0x7977461eae40>>, which will be terminated.  Please ensure that SQLAlchemy pooled connections are returned to the pool explicitly, either by calling ``close()`` or by using appropriate context managers to manage their lifecycle.
+/usr/lib/python3.12/json/decoder.py:353: SAWarning: The garbage collector is trying to clean up non-checked-in connection <AdaptedConnection <asyncpg.connection.Connection object at 0x7977461eae40>>, which will be terminated.  Please ensure that SQLAlchemy pooled connections are returned to the pool explicitly, either by calling ``close()`` or by using appropriate context managers to manage their lifecycle.
+  obj, end = self.scan_once(s, idx)
+INFO:     127.0.0.1:45674 - "GET /api/v1/data/progress/5f8d7f5d-626c-4618-9139-5bf39954299f HTTP/1.1" 200 OK
+INFO:     127.0.0.1:45674 - "GET /api/v1/data/progress/5f8d7f5d-626c-4618-9139-5bf39954299f HTTP/1.1" 200 OK
+INFO:     127.0.0.1:45674 - "GET /api/v1/data/progress/5f8d7f5d-626c-4618-9139-5bf39954299f HTTP/1.1" 200 OK
+INFO:     127.0.0.1:45674 - "GET /api/v1/data/progress/5f8d7f5d-626c-4618-9139-5bf39954299f HTTP/1.1" 200 OK
+The garbage collector is trying to clean up non-checked-in connection <AdaptedConnection <asyncpg.connection.Connection object at 0x7977461eaf30>>, which will be terminated.  Please ensure that SQLAlchemy pooled connections are returned to the pool explicitly, either by calling ``close()`` or by using appropriate context managers to manage their lifecycle.
+/usr/lib/python3.12/json/decoder.py:353: SAWarning: The garbage collector is trying to clean up non-checked-in connection <AdaptedConnection <asyncpg.connection.Connection object at 0x7977461eaf30>>, which will be terminated.  Please ensure that SQLAlchemy pooled connections are returned to the pool explicitly, either by calling ``close()`` or by using appropriate context managers to manage their lifecycle.
+  obj, end = self.scan_once(s, idx)
+The garbage collector is trying to clean up non-checked-in connection <AdaptedConnection <asyncpg.connection.Connection object at 0x7977461eac60>>, which will be terminated.  Please ensure that SQLAlchemy pooled connections are returned to the pool explicitly, either by calling ``close()`` or by using appropriate context managers to manage their lifecycle.
+/usr/lib/python3.12/json/decoder.py:353: SAWarning: The garbage collector is trying to clean up non-checked-in connection <AdaptedConnection <asyncpg.connection.Connection object at 0x7977461eac60>>, which will be terminated.  Please ensure that SQLAlchemy pooled connections are returned to the pool explicitly, either by calling ``close()`` or by using appropriate context managers to manage their lifecycle.
+  obj, end = self.scan_once(s, idx)
+The garbage collector is trying to clean up non-checked-in connection <AdaptedConnection <asyncpg.connection.Connection object at 0x7977437285f0>>, which will be terminated.  Please ensure that SQLAlchemy pooled connections are returned to the pool explicitly, either by calling ``close()`` or by using appropriate context managers to manage their lifecycle.
+/usr/lib/python3.12/json/decoder.py:353: SAWarning: The garbage collector is trying to clean up non-checked-in connection <AdaptedConnection <asyncpg.connection.Connection object at 0x7977437285f0>>, which will be terminated.  Please ensure that SQLAlchemy pooled connections are returned to the pool explicitly, either by calling ``close()`` or by using appropriate context managers to manage their lifecycle.
+  obj, end = self.scan_once(s, idx)
+INFO:     127.0.0.1:45674 - "GET /api/v1/data/progress/5f8d7f5d-626c-4618-9139-5bf39954299f HTTP/1.1" 200 OK
+INFO:     127.0.0.1:45674 - "GET /api/v1/data/progress/5f8d7f5d-626c-4618-9139-5bf39954299f HTTP/1.1" 200 OK
+INFO:     127.0.0.1:45674 - "GET /api/v1/data/progress/5f8d7f5d-626c-4618-9139-5bf39954299f HTTP/1.1" 200 OK
+INFO:     127.0.0.1:45674 - "GET /api/v1/data/progress/5f8d7f5d-626c-4618-9139-5bf39954299f HTTP/1.1" 200 OK
+The garbage collector is trying to clean up non-checked-in connection <AdaptedConnection <asyncpg.connection.Connection object at 0x7977461ea8a0>>, which will be terminated.  Please ensure that SQLAlchemy pooled connections are returned to the pool explicitly, either by calling ``close()`` or by using appropriate context managers to manage their lifecycle.
+/tmp/orchestrator_backend_venv/lib/python3.12/site-packages/asyncpg/prepared_stmt.py:253: SAWarning: The garbage collector is trying to clean up non-checked-in connection <AdaptedConnection <asyncpg.connection.Connection object at 0x7977461ea8a0>>, which will be terminated.  Please ensure that SQLAlchemy pooled connections are returned to the pool explicitly, either by calling ``close()`` or by using appropriate context managers to manage their lifecycle.
+  async def __do_execute(self, executor):
+The garbage collector is trying to clean up non-checked-in connection <AdaptedConnection <asyncpg.connection.Connection object at 0x797743728050>>, which will be terminated.  Please ensure that SQLAlchemy pooled connections are returned to the pool explicitly, either by calling ``close()`` or by using appropriate context managers to manage their lifecycle.
+/tmp/orchestrator_backend_venv/lib/python3.12/site-packages/asyncpg/prepared_stmt.py:253: SAWarning: The garbage collector is trying to clean up non-checked-in connection <AdaptedConnection <asyncpg.connection.Connection object at 0x797743728050>>, which will be terminated.  Please ensure that SQLAlchemy pooled connections are returned to the pool explicitly, either by calling ``close()`` or by using appropriate context managers to manage their lifecycle.
+  async def __do_execute(self, executor):
+The garbage collector is trying to clean up non-checked-in connection <AdaptedConnection <asyncpg.connection.Connection object at 0x79774372a300>>, which will be terminated.  Please ensure that SQLAlchemy pooled connections are returned to the pool explicitly, either by calling ``close()`` or by using appropriate context managers to manage their lifecycle.
+/tmp/orchestrator_backend_venv/lib/python3.12/site-packages/asyncpg/prepared_stmt.py:253: SAWarning: The garbage collector is trying to clean up non-checked-in connection <AdaptedConnection <asyncpg.connection.Connection object at 0x79774372a300>>, which will be terminated.  Please ensure that SQLAlchemy pooled connections are returned to the pool explicitly, either by calling ``close()`` or by using appropriate context managers to manage their lifecycle.
+  async def __do_execute(self, executor):
+INFO:     127.0.0.1:45674 - "GET /api/v1/data/progress/5f8d7f5d-626c-4618-9139-5bf39954299f HTTP/1.1" 200 OK
+INFO:     127.0.0.1:45674 - "GET /api/v1/data/progress/5f8d7f5d-626c-4618-9139-5bf39954299f HTTP/1.1" 200 OK
+INFO:     127.0.0.1:45674 - "GET /api/v1/data/progress/5f8d7f5d-626c-4618-9139-5bf39954299f HTTP/1.1" 200 OK
+INFO:     127.0.0.1:45674 - "GET /api/v1/data/progress/5f8d7f5d-626c-4618-9139-5bf39954299f HTTP/1.1" 200 OK
+The garbage collector is trying to clean up non-checked-in connection <AdaptedConnection <asyncpg.connection.Connection object at 0x7977461eb5c0>>, which will be terminated.  Please ensure that SQLAlchemy pooled connections are returned to the pool explicitly, either by calling ``close()`` or by using appropriate context managers to manage their lifecycle.
+/tmp/orchestrator_backend_venv/lib/python3.12/site-packages/asyncpg/connection.py:2567: SAWarning: The garbage collector is trying to clean up non-checked-in connection <AdaptedConnection <asyncpg.connection.Connection object at 0x7977461eb5c0>>, which will be terminated.  Please ensure that SQLAlchemy pooled connections are returned to the pool explicitly, either by calling ``close()`` or by using appropriate context managers to manage their lifecycle.
+  entry._cleanup_cb = self._loop.call_later(
+The garbage collector is trying to clean up non-checked-in connection <AdaptedConnection <asyncpg.connection.Connection object at 0x7977461eb200>>, which will be terminated.  Please ensure that SQLAlchemy pooled connections are returned to the pool explicitly, either by calling ``close()`` or by using appropriate context managers to manage their lifecycle.
+/tmp/orchestrator_backend_venv/lib/python3.12/site-packages/asyncpg/connection.py:2567: SAWarning: The garbage collector is trying to clean up non-checked-in connection <AdaptedConnection <asyncpg.connection.Connection object at 0x7977461eb200>>, which will be terminated.  Please ensure that SQLAlchemy pooled connections are returned to the pool explicitly, either by calling ``close()`` or by using appropriate context managers to manage their lifecycle.
+  entry._cleanup_cb = self._loop.call_later(
+The garbage collector is trying to clean up non-checked-in connection <AdaptedConnection <asyncpg.connection.Connection object at 0x797743728500>>, which will be terminated.  Please ensure that SQLAlchemy pooled connections are returned to the pool explicitly, either by calling ``close()`` or by using appropriate context managers to manage their lifecycle.
+/tmp/orchestrator_backend_venv/lib/python3.12/site-packages/asyncpg/connection.py:2567: SAWarning: The garbage collector is trying to clean up non-checked-in connection <AdaptedConnection <asyncpg.connection.Connection object at 0x797743728500>>, which will be terminated.  Please ensure that SQLAlchemy pooled connections are returned to the pool explicitly, either by calling ``close()`` or by using appropriate context managers to manage their lifecycle.
+  entry._cleanup_cb = self._loop.call_later(
+The garbage collector is trying to clean up non-checked-in connection <AdaptedConnection <asyncpg.connection.Connection object at 0x79774372a7b0>>, which will be terminated.  Please ensure that SQLAlchemy pooled connections are returned to the pool explicitly, either by calling ``close()`` or by using appropriate context managers to manage their lifecycle.
+/tmp/orchestrator_backend_venv/lib/python3.12/site-packages/asyncpg/connection.py:2567: SAWarning: The garbage collector is trying to clean up non-checked-in connection <AdaptedConnection <asyncpg.connection.Connection object at 0x79774372a7b0>>, which will be terminated.  Please ensure that SQLAlchemy pooled connections are returned to the pool explicitly, either by calling ``close()`` or by using appropriate context managers to manage their lifecycle.
+  entry._cleanup_cb = self._loop.call_later(
+The garbage collector is trying to clean up non-checked-in connection <AdaptedConnection <asyncpg.connection.Connection object at 0x79774372a990>>, which will be terminated.  Please ensure that SQLAlchemy pooled connections are returned to the pool explicitly, either by calling ``close()`` or by using appropriate context managers to manage their lifecycle.
+/tmp/orchestrator_backend_venv/lib/python3.12/site-packages/asyncpg/connection.py:2567: SAWarning: The garbage collector is trying to clean up non-checked-in connection <AdaptedConnection <asyncpg.connection.Connection object at 0x79774372a990>>, which will be terminated.  Please ensure that SQLAlchemy pooled connections are returned to the pool explicitly, either by calling ``close()`` or by using appropriate context managers to manage their lifecycle.
+  entry._cleanup_cb = self._loop.call_later(
+The garbage collector is trying to clean up non-checked-in connection <AdaptedConnection <asyncpg.connection.Connection object at 0x797743728230>>, which will be terminated.  Please ensure that SQLAlchemy pooled connections are returned to the pool explicitly, either by calling ``close()`` or by using appropriate context managers to manage their lifecycle.
+/tmp/orchestrator_backend_venv/lib/python3.12/site-packages/asyncpg/connection.py:2567: SAWarning: The garbage collector is trying to clean up non-checked-in connection <AdaptedConnection <asyncpg.connection.Connection object at 0x797743728230>>, which will be terminated.  Please ensure that SQLAlchemy pooled connections are returned to the pool explicitly, either by calling ``close()`` or by using appropriate context managers to manage their lifecycle.
+  entry._cleanup_cb = self._loop.call_later(
+The garbage collector is trying to clean up non-checked-in connection <AdaptedConnection <asyncpg.connection.Connection object at 0x79774372ae40>>, which will be terminated.  Please ensure that SQLAlchemy pooled connections are returned to the pool explicitly, either by calling ``close()`` or by using appropriate context managers to manage their lifecycle.
+/tmp/orchestrator_backend_venv/lib/python3.12/site-packages/asyncpg/connection.py:2567: SAWarning: The garbage collector is trying to clean up non-checked-in connection <AdaptedConnection <asyncpg.connection.Connection object at 0x79774372ae40>>, which will be terminated.  Please ensure that SQLAlchemy pooled connections are returned to the pool explicitly, either by calling ``close()`` or by using appropriate context managers to manage their lifecycle.
+  entry._cleanup_cb = self._loop.call_later(
+INFO:     127.0.0.1:45674 - "GET /api/v1/data/progress/5f8d7f5d-626c-4618-9139-5bf39954299f HTTP/1.1" 200 OK
+INFO:     127.0.0.1:45674 - "GET /api/v1/data/progress/5f8d7f5d-626c-4618-9139-5bf39954299f HTTP/1.1" 200 OK
+INFO:     127.0.0.1:45674 - "GET /api/v1/data/progress/5f8d7f5d-626c-4618-9139-5bf39954299f HTTP/1.1" 200 OK
+INFO:     127.0.0.1:45674 - "GET /api/v1/data/progress/5f8d7f5d-626c-4618-9139-5bf39954299f HTTP/1.1" 200 OK
+INFO:     127.0.0.1:45674 - "GET /api/v1/data/progress/5f8d7f5d-626c-4618-9139-5bf39954299f HTTP/1.1" 200 OK
+The garbage collector is trying to clean up non-checked-in connection <AdaptedConnection <asyncpg.connection.Connection object at 0x7977461ebc50>>, which will be terminated.  Please ensure that SQLAlchemy pooled connections are returned to the pool explicitly, either by calling ``close()`` or by using appropriate context managers to manage their lifecycle.
+<frozen posixpath>:82: SAWarning: The garbage collector is trying to clean up non-checked-in connection <AdaptedConnection <asyncpg.connection.Connection object at 0x7977461ebc50>>, which will be terminated.  Please ensure that SQLAlchemy pooled connections are returned to the pool explicitly, either by calling ``close()`` or by using appropriate context managers to manage their lifecycle.
+The garbage collector is trying to clean up non-checked-in connection <AdaptedConnection <asyncpg.connection.Connection object at 0x7977461eb6b0>>, which will be terminated.  Please ensure that SQLAlchemy pooled connections are returned to the pool explicitly, either by calling ``close()`` or by using appropriate context managers to manage their lifecycle.
+<frozen posixpath>:82: SAWarning: The garbage collector is trying to clean up non-checked-in connection <AdaptedConnection <asyncpg.connection.Connection object at 0x7977461eb6b0>>, which will be terminated.  Please ensure that SQLAlchemy pooled connections are returned to the pool explicitly, either by calling ``close()`` or by using appropriate context managers to manage their lifecycle.
+The garbage collector is trying to clean up non-checked-in connection <AdaptedConnection <asyncpg.connection.Connection object at 0x7977461e87d0>>, which will be terminated.  Please ensure that SQLAlchemy pooled connections are returned to the pool explicitly, either by calling ``close()`` or by using appropriate context managers to manage their lifecycle.
+<frozen posixpath>:82: SAWarning: The garbage collector is trying to clean up non-checked-in connection <AdaptedConnection <asyncpg.connection.Connection object at 0x7977461e87d0>>, which will be terminated.  Please ensure that SQLAlchemy pooled connections are returned to the pool explicitly, either by calling ``close()`` or by using appropriate context managers to manage their lifecycle.
+The garbage collector is trying to clean up non-checked-in connection <AdaptedConnection <asyncpg.connection.Connection object at 0x7977461e97c0>>, which will be terminated.  Please ensure that SQLAlchemy pooled connections are returned to the pool explicitly, either by calling ``close()`` or by using appropriate context managers to manage their lifecycle.
+<frozen posixpath>:82: SAWarning: The garbage collector is trying to clean up non-checked-in connection <AdaptedConnection <asyncpg.connection.Connection object at 0x7977461e97c0>>, which will be terminated.  Please ensure that SQLAlchemy pooled connections are returned to the pool explicitly, either by calling ``close()`` or by using appropriate context managers to manage their lifecycle.
+INFO:     127.0.0.1:45674 - "GET /api/v1/data/progress/5f8d7f5d-626c-4618-9139-5bf39954299f HTTP/1.1" 200 OK
+INFO:     127.0.0.1:45674 - "GET /api/v1/data/progress/5f8d7f5d-626c-4618-9139-5bf39954299f HTTP/1.1" 200 OK
+INFO:     127.0.0.1:45674 - "GET /api/v1/data/progress/5f8d7f5d-626c-4618-9139-5bf39954299f HTTP/1.1" 200 OK
+INFO:     127.0.0.1:45674 - "GET /api/v1/data/progress/5f8d7f5d-626c-4618-9139-5bf39954299f HTTP/1.1" 200 OK
+INFO:     127.0.0.1:45674 - "GET /api/v1/data/progress/5f8d7f5d-626c-4618-9139-5bf39954299f HTTP/1.1" 200 OK
+The garbage collector is trying to clean up non-checked-in connection <AdaptedConnection <asyncpg.connection.Connection object at 0x7977461ea8a0>>, which will be terminated.  Please ensure that SQLAlchemy pooled connections are returned to the pool explicitly, either by calling ``close()`` or by using appropriate context managers to manage their lifecycle.
+/tmp/orchestrator_backend_venv/lib/python3.12/site-packages/asyncpg/connect_utils.py:494: SAWarning: The garbage collector is trying to clean up non-checked-in connection <AdaptedConnection <asyncpg.connection.Connection object at 0x7977461ea8a0>>, which will be terminated.  Please ensure that SQLAlchemy pooled connections are returned to the pool explicitly, either by calling ``close()`` or by using appropriate context managers to manage their lifecycle.
+  for h, p in zip(host, port):
+The garbage collector is trying to clean up non-checked-in connection <AdaptedConnection <asyncpg.connection.Connection object at 0x7977461eb980>>, which will be terminated.  Please ensure that SQLAlchemy pooled connections are returned to the pool explicitly, either by calling ``close()`` or by using appropriate context managers to manage their lifecycle.
+/tmp/orchestrator_backend_venv/lib/python3.12/site-packages/asyncpg/connect_utils.py:494: SAWarning: The garbage collector is trying to clean up non-checked-in connection <AdaptedConnection <asyncpg.connection.Connection object at 0x7977461eb980>>, which will be terminated.  Please ensure that SQLAlchemy pooled connections are returned to the pool explicitly, either by calling ``close()`` or by using appropriate context managers to manage their lifecycle.
+  for h, p in zip(host, port):
+The garbage collector is trying to clean up non-checked-in connection <AdaptedConnection <asyncpg.connection.Connection object at 0x7977461a89b0>>, which will be terminated.  Please ensure that SQLAlchemy pooled connections are returned to the pool explicitly, either by calling ``close()`` or by using appropriate context managers to manage their lifecycle.
+/tmp/orchestrator_backend_venv/lib/python3.12/site-packages/asyncpg/connect_utils.py:494: SAWarning: The garbage collector is trying to clean up non-checked-in connection <AdaptedConnection <asyncpg.connection.Connection object at 0x7977461a89b0>>, which will be terminated.  Please ensure that SQLAlchemy pooled connections are returned to the pool explicitly, either by calling ``close()`` or by using appropriate context managers to manage their lifecycle.
+  for h, p in zip(host, port):
+The garbage collector is trying to clean up non-checked-in connection <AdaptedConnection <asyncpg.connection.Connection object at 0x7977461a87d0>>, which will be terminated.  Please ensure that SQLAlchemy pooled connections are returned to the pool explicitly, either by calling ``close()`` or by using appropriate context managers to manage their lifecycle.
+/tmp/orchestrator_backend_venv/lib/python3.12/site-packages/asyncpg/connect_utils.py:494: SAWarning: The garbage collector is trying to clean up non-checked-in connection <AdaptedConnection <asyncpg.connection.Connection object at 0x7977461a87d0>>, which will be terminated.  Please ensure that SQLAlchemy pooled connections are returned to the pool explicitly, either by calling ``close()`` or by using appropriate context managers to manage their lifecycle.
+  for h, p in zip(host, port):
+INFO:     127.0.0.1:45674 - "GET /api/v1/data/progress/5f8d7f5d-626c-4618-9139-5bf39954299f HTTP/1.1" 200 OK
+INFO:     127.0.0.1:45674 - "GET /api/v1/data/progress/5f8d7f5d-626c-4618-9139-5bf39954299f HTTP/1.1" 200 OK
+INFO:     127.0.0.1:45674 - "GET /api/v1/data/progress/5f8d7f5d-626c-4618-9139-5bf39954299f HTTP/1.1" 200 OK
+INFO:     127.0.0.1:45674 - "GET /api/v1/data/progress/5f8d7f5d-626c-4618-9139-5bf39954299f HTTP/1.1" 200 OK
+INFO:     127.0.0.1:45674 - "GET /api/v1/data/progress/5f8d7f5d-626c-4618-9139-5bf39954299f HTTP/1.1" 200 OK
+The garbage collector is trying to clean up non-checked-in connection <AdaptedConnection <asyncpg.connection.Connection object at 0x7977461eae40>>, which will be terminated.  Please ensure that SQLAlchemy pooled connections are returned to the pool explicitly, either by calling ``close()`` or by using appropriate context managers to manage their lifecycle.
+/home/neelam/orchestrator/backend/app/routes/data.py:296: SAWarning: The garbage collector is trying to clean up non-checked-in connection <AdaptedConnection <asyncpg.connection.Connection object at 0x7977461eae40>>, which will be terminated.  Please ensure that SQLAlchemy pooled connections are returned to the pool explicitly, either by calling ``close()`` or by using appropriate context managers to manage their lifecycle.
+  result = await db.execute(
+The garbage collector is trying to clean up non-checked-in connection <AdaptedConnection <asyncpg.connection.Connection object at 0x79774372a120>>, which will be terminated.  Please ensure that SQLAlchemy pooled connections are returned to the pool explicitly, either by calling ``close()`` or by using appropriate context managers to manage their lifecycle.
+/home/neelam/orchestrator/backend/app/routes/data.py:296: SAWarning: The garbage collector is trying to clean up non-checked-in connection <AdaptedConnection <asyncpg.connection.Connection object at 0x79774372a120>>, which will be terminated.  Please ensure that SQLAlchemy pooled connections are returned to the pool explicitly, either by calling ``close()`` or by using appropriate context managers to manage their lifecycle.
+  result = await db.execute(
+The garbage collector is trying to clean up non-checked-in connection <AdaptedConnection <asyncpg.connection.Connection object at 0x79774372a5d0>>, which will be terminated.  Please ensure that SQLAlchemy pooled connections are returned to the pool explicitly, either by calling ``close()`` or by using appropriate context managers to manage their lifecycle.
+/home/neelam/orchestrator/backend/app/routes/data.py:296: SAWarning: The garbage collector is trying to clean up non-checked-in connection <AdaptedConnection <asyncpg.connection.Connection object at 0x79774372a5d0>>, which will be terminated.  Please ensure that SQLAlchemy pooled connections are returned to the pool explicitly, either by calling ``close()`` or by using appropriate context managers to manage their lifecycle.
+  result = await db.execute(
+The garbage collector is trying to clean up non-checked-in connection <AdaptedConnection <asyncpg.connection.Connection object at 0x79774372a300>>, which will be terminated.  Please ensure that SQLAlchemy pooled connections are returned to the pool explicitly, either by calling ``close()`` or by using appropriate context managers to manage their lifecycle.
+/home/neelam/orchestrator/backend/app/routes/data.py:296: SAWarning: The garbage collector is trying to clean up non-checked-in connection <AdaptedConnection <asyncpg.connection.Connection object at 0x79774372a300>>, which will be terminated.  Please ensure that SQLAlchemy pooled connections are returned to the pool explicitly, either by calling ``close()`` or by using appropriate context managers to manage their lifecycle.
+  result = await db.execute(
+INFO:     127.0.0.1:45674 - "GET /api/v1/data/progress/5f8d7f5d-626c-4618-9139-5bf39954299f HTTP/1.1" 200 OK
+INFO:     127.0.0.1:45674 - "GET /api/v1/data/progress/5f8d7f5d-626c-4618-9139-5bf39954299f HTTP/1.1" 200 OK
+INFO:     127.0.0.1:45674 - "GET /api/v1/data/progress/5f8d7f5d-626c-4618-9139-5bf39954299f HTTP/1.1" 200 OK
+INFO:     127.0.0.1:45674 - "GET /api/v1/data/progress/5f8d7f5d-626c-4618-9139-5bf39954299f HTTP/1.1" 200 OK
+INFO:     127.0.0.1:45674 - "GET /api/v1/data/progress/5f8d7f5d-626c-4618-9139-5bf39954299f HTTP/1.1" 200 OK
+The garbage collector is trying to clean up non-checked-in connection <AdaptedConnection <asyncpg.connection.Connection object at 0x79774372b3e0>>, which will be terminated.  Please ensure that SQLAlchemy pooled connections are returned to the pool explicitly, either by calling ``close()`` or by using appropriate context managers to manage their lifecycle.
+/usr/lib/python3.12/weakref.py:367: SAWarning: The garbage collector is trying to clean up non-checked-in connection <AdaptedConnection <asyncpg.connection.Connection object at 0x79774372b3e0>>, which will be terminated.  Please ensure that SQLAlchemy pooled connections are returned to the pool explicitly, either by calling ``close()`` or by using appropriate context managers to manage their lifecycle.
+  def __init__(self, dict=None):
+The garbage collector is trying to clean up non-checked-in connection <AdaptedConnection <asyncpg.connection.Connection object at 0x79774372b5c0>>, which will be terminated.  Please ensure that SQLAlchemy pooled connections are returned to the pool explicitly, either by calling ``close()`` or by using appropriate context managers to manage their lifecycle.
+/usr/lib/python3.12/weakref.py:367: SAWarning: The garbage collector is trying to clean up non-checked-in connection <AdaptedConnection <asyncpg.connection.Connection object at 0x79774372b5c0>>, which will be terminated.  Please ensure that SQLAlchemy pooled connections are returned to the pool explicitly, either by calling ``close()`` or by using appropriate context managers to manage their lifecycle.
+  def __init__(self, dict=None):
+The garbage collector is trying to clean up non-checked-in connection <AdaptedConnection <asyncpg.connection.Connection object at 0x79774372b980>>, which will be terminated.  Please ensure that SQLAlchemy pooled connections are returned to the pool explicitly, either by calling ``close()`` or by using appropriate context managers to manage their lifecycle.
+/usr/lib/python3.12/weakref.py:367: SAWarning: The garbage collector is trying to clean up non-checked-in connection <AdaptedConnection <asyncpg.connection.Connection object at 0x79774372b980>>, which will be terminated.  Please ensure that SQLAlchemy pooled connections are returned to the pool explicitly, either by calling ``close()`` or by using appropriate context managers to manage their lifecycle.
+  def __init__(self, dict=None):
+The garbage collector is trying to clean up non-checked-in connection <AdaptedConnection <asyncpg.connection.Connection object at 0x79774372bd40>>, which will be terminated.  Please ensure that SQLAlchemy pooled connections are returned to the pool explicitly, either by calling ``close()`` or by using appropriate context managers to manage their lifecycle.
+/usr/lib/python3.12/weakref.py:367: SAWarning: The garbage collector is trying to clean up non-checked-in connection <AdaptedConnection <asyncpg.connection.Connection object at 0x79774372bd40>>, which will be terminated.  Please ensure that SQLAlchemy pooled connections are returned to the pool explicitly, either by calling ``close()`` or by using appropriate context managers to manage their lifecycle.
+  def __init__(self, dict=None):
+INFO:     127.0.0.1:45674 - "GET /api/v1/data/progress/5f8d7f5d-626c-4618-9139-5bf39954299f HTTP/1.1" 200 OK
+INFO:     127.0.0.1:45674 - "GET /api/v1/data/progress/5f8d7f5d-626c-4618-9139-5bf39954299f HTTP/1.1" 200 OK
+INFO:     127.0.0.1:45674 - "GET /api/v1/data/progress/5f8d7f5d-626c-4618-9139-5bf39954299f HTTP/1.1" 200 OK
+INFO:     127.0.0.1:45674 - "GET /api/v1/data/progress/5f8d7f5d-626c-4618-9139-5bf39954299f HTTP/1.1" 200 OK
+The garbage collector is trying to clean up non-checked-in connection <AdaptedConnection <asyncpg.connection.Connection object at 0x797740d28500>>, which will be terminated.  Please ensure that SQLAlchemy pooled connections are returned to the pool explicitly, either by calling ``close()`` or by using appropriate context managers to manage their lifecycle.
+/tmp/orchestrator_backend_venv/lib/python3.12/site-packages/asyncpg/connection.py:432: SAWarning: The garbage collector is trying to clean up non-checked-in connection <AdaptedConnection <asyncpg.connection.Connection object at 0x797740d28500>>, which will be terminated.  Please ensure that SQLAlchemy pooled connections are returned to the pool explicitly, either by calling ``close()`` or by using appropriate context managers to manage their lifecycle.
+  statement = await self._protocol.prepare(
+The garbage collector is trying to clean up non-checked-in connection <AdaptedConnection <asyncpg.connection.Connection object at 0x797740d288c0>>, which will be terminated.  Please ensure that SQLAlchemy pooled connections are returned to the pool explicitly, either by calling ``close()`` or by using appropriate context managers to manage their lifecycle.
+/tmp/orchestrator_backend_venv/lib/python3.12/site-packages/asyncpg/connection.py:432: SAWarning: The garbage collector is trying to clean up non-checked-in connection <AdaptedConnection <asyncpg.connection.Connection object at 0x797740d288c0>>, which will be terminated.  Please ensure that SQLAlchemy pooled connections are returned to the pool explicitly, either by calling ``close()`` or by using appropriate context managers to manage their lifecycle.
+  statement = await self._protocol.prepare(
+The garbage collector is trying to clean up non-checked-in connection <AdaptedConnection <asyncpg.connection.Connection object at 0x797740d28c80>>, which will be terminated.  Please ensure that SQLAlchemy pooled connections are returned to the pool explicitly, either by calling ``close()`` or by using appropriate context managers to manage their lifecycle.
+/tmp/orchestrator_backend_venv/lib/python3.12/site-packages/asyncpg/connection.py:432: SAWarning: The garbage collector is trying to clean up non-checked-in connection <AdaptedConnection <asyncpg.connection.Connection object at 0x797740d28c80>>, which will be terminated.  Please ensure that SQLAlchemy pooled connections are returned to the pool explicitly, either by calling ``close()`` or by using appropriate context managers to manage their lifecycle.
+  statement = await self._protocol.prepare(
+INFO:     127.0.0.1:45674 - "GET /api/v1/data/progress/5f8d7f5d-626c-4618-9139-5bf39954299f HTTP/1.1" 200 OK
+INFO:     127.0.0.1:45674 - "GET /api/v1/data/progress/5f8d7f5d-626c-4618-9139-5bf39954299f HTTP/1.1" 200 OK
+INFO:     127.0.0.1:45674 - "GET /api/v1/data/progress/5f8d7f5d-626c-4618-9139-5bf39954299f HTTP/1.1" 200 OK
+INFO:     127.0.0.1:45674 - "GET /api/v1/data/progress/5f8d7f5d-626c-4618-9139-5bf39954299f HTTP/1.1" 200 OK
+The garbage collector is trying to clean up non-checked-in connection <AdaptedConnection <asyncpg.connection.Connection object at 0x797740d286e0>>, which will be terminated.  Please ensure that SQLAlchemy pooled connections are returned to the pool explicitly, either by calling ``close()`` or by using appropriate context managers to manage their lifecycle.
+/tmp/orchestrator_backend_venv/lib/python3.12/site-packages/asyncpg/serverversion.py:42: SAWarning: The garbage collector is trying to clean up non-checked-in connection <AdaptedConnection <asyncpg.connection.Connection object at 0x797740d286e0>>, which will be terminated.  Please ensure that SQLAlchemy pooled connections are returned to the pool explicitly, either by calling ``close()`` or by using appropriate context managers to manage their lifecycle.
+  for ver_key, ver_value in version.items():
+The garbage collector is trying to clean up non-checked-in connection <AdaptedConnection <asyncpg.connection.Connection object at 0x797740d29130>>, which will be terminated.  Please ensure that SQLAlchemy pooled connections are returned to the pool explicitly, either by calling ``close()`` or by using appropriate context managers to manage their lifecycle.
+/tmp/orchestrator_backend_venv/lib/python3.12/site-packages/asyncpg/serverversion.py:42: SAWarning: The garbage collector is trying to clean up non-checked-in connection <AdaptedConnection <asyncpg.connection.Connection object at 0x797740d29130>>, which will be terminated.  Please ensure that SQLAlchemy pooled connections are returned to the pool explicitly, either by calling ``close()`` or by using appropriate context managers to manage their lifecycle.
+  for ver_key, ver_value in version.items():
+The garbage collector is trying to clean up non-checked-in connection <AdaptedConnection <asyncpg.connection.Connection object at 0x797740d296d0>>, which will be terminated.  Please ensure that SQLAlchemy pooled connections are returned to the pool explicitly, either by calling ``close()`` or by using appropriate context managers to manage their lifecycle.
+/tmp/orchestrator_backend_venv/lib/python3.12/site-packages/asyncpg/serverversion.py:42: SAWarning: The garbage collector is trying to clean up non-checked-in connection <AdaptedConnection <asyncpg.connection.Connection object at 0x797740d296d0>>, which will be terminated.  Please ensure that SQLAlchemy pooled connections are returned to the pool explicitly, either by calling ``close()`` or by using appropriate context managers to manage their lifecycle.
+  for ver_key, ver_value in version.items():
+INFO:     127.0.0.1:45674 - "GET /api/v1/data/progress/5f8d7f5d-626c-4618-9139-5bf39954299f HTTP/1.1" 200 OK
+INFO:     127.0.0.1:45674 - "GET /api/v1/data/progress/5f8d7f5d-626c-4618-9139-5bf39954299f HTTP/1.1" 200 OK
+INFO:     127.0.0.1:45674 - "GET /api/v1/slm/for-corpus?job_id=5f8d7f5d-626c-4618-9139-5bf39954299f HTTP/1.1" 200 OK
+The garbage collector is trying to clean up non-checked-in connection <AdaptedConnection <asyncpg.connection.Connection object at 0x797740d28aa0>>, which will be terminated.  Please ensure that SQLAlchemy pooled connections are returned to the pool explicitly, either by calling ``close()`` or by using appropriate context managers to manage their lifecycle.
+/home/neelam/orchestrator/backend/app/modules/slm_factory/slm_registry.py:169: SAWarning: The garbage collector is trying to clean up non-checked-in connection <AdaptedConnection <asyncpg.connection.Connection object at 0x797740d28aa0>>, which will be terminated.  Please ensure that SQLAlchemy pooled connections are returned to the pool explicitly, either by calling ``close()`` or by using appropriate context managers to manage their lifecycle.
+  return [dict(r) for r in result.mappings().all()]
+The garbage collector is trying to clean up non-checked-in connection <AdaptedConnection <asyncpg.connection.Connection object at 0x797740d29d60>>, which will be terminated.  Please ensure that SQLAlchemy pooled connections are returned to the pool explicitly, either by calling ``close()`` or by using appropriate context managers to manage their lifecycle.
+/home/neelam/orchestrator/backend/app/modules/slm_factory/slm_registry.py:169: SAWarning: The garbage collector is trying to clean up non-checked-in connection <AdaptedConnection <asyncpg.connection.Connection object at 0x797740d29d60>>, which will be terminated.  Please ensure that SQLAlchemy pooled connections are returned to the pool explicitly, either by calling ``close()`` or by using appropriate context managers to manage their lifecycle.
+  return [dict(r) for r in result.mappings().all()]
+INFO:     127.0.0.1:45674 - "GET /api/v1/slm/status?domain_label=it-industry HTTP/1.1" 200 OK
+INFO:     127.0.0.1:45674 - "GET /api/v1/data/wiki/5f8d7f5d-626c-4618-9139-5bf39954299f HTTP/1.1" 500 Internal Server Error
+ERROR:    Exception in ASGI application
+Traceback (most recent call last):
+  File "/tmp/orchestrator_backend_venv/lib/python3.12/site-packages/uvicorn/protocols/http/httptools_impl.py", line 401, in run_asgi
+    result = await app(  # type: ignore[func-returns-value]
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/tmp/orchestrator_backend_venv/lib/python3.12/site-packages/uvicorn/middleware/proxy_headers.py", line 70, in __call__
+    return await self.app(scope, receive, send)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/tmp/orchestrator_backend_venv/lib/python3.12/site-packages/fastapi/applications.py", line 1054, in __call__
+    await super().__call__(scope, receive, send)
+  File "/tmp/orchestrator_backend_venv/lib/python3.12/site-packages/starlette/applications.py", line 113, in __call__
+    await self.middleware_stack(scope, receive, send)
+  File "/tmp/orchestrator_backend_venv/lib/python3.12/site-packages/starlette/middleware/errors.py", line 187, in __call__
+    raise exc
+  File "/tmp/orchestrator_backend_venv/lib/python3.12/site-packages/starlette/middleware/errors.py", line 165, in __call__
+    await self.app(scope, receive, _send)
+  File "/tmp/orchestrator_backend_venv/lib/python3.12/site-packages/starlette/middleware/cors.py", line 93, in __call__
+    await self.simple_response(scope, receive, send, request_headers=headers)
+  File "/tmp/orchestrator_backend_venv/lib/python3.12/site-packages/starlette/middleware/cors.py", line 144, in simple_response
+    await self.app(scope, receive, send)
+  File "/tmp/orchestrator_backend_venv/lib/python3.12/site-packages/starlette/middleware/exceptions.py", line 62, in __call__
+    await wrap_app_handling_exceptions(self.app, conn)(scope, receive, send)
+  File "/tmp/orchestrator_backend_venv/lib/python3.12/site-packages/starlette/_exception_handler.py", line 62, in wrapped_app
+    raise exc
+  File "/tmp/orchestrator_backend_venv/lib/python3.12/site-packages/starlette/_exception_handler.py", line 51, in wrapped_app
+    await app(scope, receive, sender)
+  File "/tmp/orchestrator_backend_venv/lib/python3.12/site-packages/starlette/routing.py", line 715, in __call__
+    await self.middleware_stack(scope, receive, send)
+  File "/tmp/orchestrator_backend_venv/lib/python3.12/site-packages/starlette/routing.py", line 735, in app
+    await route.handle(scope, receive, send)
+  File "/tmp/orchestrator_backend_venv/lib/python3.12/site-packages/starlette/routing.py", line 288, in handle
+    await self.app(scope, receive, send)
+  File "/tmp/orchestrator_backend_venv/lib/python3.12/site-packages/starlette/routing.py", line 76, in app
+    await wrap_app_handling_exceptions(app, request)(scope, receive, send)
+  File "/tmp/orchestrator_backend_venv/lib/python3.12/site-packages/starlette/_exception_handler.py", line 62, in wrapped_app
+    raise exc
+  File "/tmp/orchestrator_backend_venv/lib/python3.12/site-packages/starlette/_exception_handler.py", line 51, in wrapped_app
+    await app(scope, receive, sender)
+  File "/tmp/orchestrator_backend_venv/lib/python3.12/site-packages/starlette/routing.py", line 73, in app
+    response = await f(request)
+               ^^^^^^^^^^^^^^^^
+  File "/tmp/orchestrator_backend_venv/lib/python3.12/site-packages/fastapi/routing.py", line 301, in app
+    raw_response = await run_endpoint_function(
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/tmp/orchestrator_backend_venv/lib/python3.12/site-packages/fastapi/routing.py", line 212, in run_endpoint_function
+    return await dependant.call(**values)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/neelam/orchestrator/backend/app/routes/data.py", line 213, in get_wiki
+    if wiki_dir and wiki_dir.exists():
+                    ^^^^^^^^^^^^^^^^^
+  File "/usr/lib/python3.12/pathlib.py", line 862, in exists
+    self.stat(follow_symlinks=follow_symlinks)
+  File "/usr/lib/python3.12/pathlib.py", line 842, in stat
+    return os.stat(self, follow_symlinks=follow_symlinks)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+PermissionError: [Errno 13] Permission denied: '/home/kumar1/orchestrator/corpus_store/5f8d7f5d-626c-4618-9139-5bf39954299f/graphify-out/wiki'
+INFO:     127.0.0.1:51914 - "GET /api/v1/slm/registry HTTP/1.1" 200 OK
+INFO:     127.0.0.1:51906 - "GET /api/v1/slm/suggestions?domain_label=it-industry&job_id=5f8d7f5d-626c-4618-9139-5bf39954299f HTTP/1.1" 200 OK
+INFO:     127.0.0.1:51930 - "GET /api/v1/slm/status?domain_label=it-industry HTTP/1.1" 200 OK
+INFO:     127.0.0.1:38478 - "GET /health HTTP/1.1" 200 OK
+INFO:     Shutting down
+INFO:     Waiting for application shutdown.
+INFO:     Application shutdown complete.
+INFO:     Finished server process [1817551]

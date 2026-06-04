@@ -41,7 +41,7 @@ readability-lxml>=0.8.1
 
 # Graph / Knowledge
 graphifyy==0.5.3
-graphify==0.1.4
+# graphify==0.1.4  # Package not found in PyPI
 
 # LLM / Inference
 ollama==0.3.3

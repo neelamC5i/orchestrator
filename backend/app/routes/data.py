@@ -867,3 +867,36 @@ async def ingestion_report(
         "file_scorecards": scorecard_files,
         "registry_metrics": reg_metrics,
     }
+
+
+# ── Semantic intelligence layer artifacts (14-layer pipeline) ──────────────────
+
+@router.get("/intelligence/{job_id}")
+async def get_intelligence(job_id: str, db: AsyncSession = Depends(get_db)):
+    """
+    Return the JSON artifacts produced by the new semantic-intelligence layers
+    (metadata intelligence, semantic learning, ML validation, ontology governance,
+    graph validation). Read-only and additive; a missing artifact returns {} so the
+    UI can render whatever is available. Powers the per-layer panels on the
+    Processing page.
+    """
+    corpus_dir = await _resolve_corpus_dir(job_id, db)
+    artifacts = {
+        "metadata_intelligence": "metadata_intelligence.json",
+        "semantic_learning": "semantic_learning.json",
+        "ml_validation": "ml_validation.json",
+        "ontology": "ontology.json",
+        "graph_validation": "graph_validation.json",
+    }
+    out: dict = {"job_id": job_id}
+    for key, fname in artifacts.items():
+        data: dict = {}
+        try:
+            fpath = Path(corpus_dir) / fname
+            if fpath.exists():
+                data = json.loads(fpath.read_text(encoding="utf-8"))
+        except Exception:
+            # Missing / unreadable artifact → empty payload, never 500.
+            data = {}
+        out[key] = data
+    return out

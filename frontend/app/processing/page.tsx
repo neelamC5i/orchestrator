@@ -6,6 +6,7 @@ import PipelineCanvas, { type PipelineNode, type NodeStatus } from "../component
 import ApprovalGate, { type GateStep } from "../components/ApprovalGate";
 import AchievementToast, { fireAchievement } from "../components/AchievementToast";
 import SLMStudio, { type SLMConfig } from "../components/SLMStudio";
+import IntelligencePanels from "../components/IntelligencePanels";
 
 interface EpochEntry { epoch: number; loss: number; }
 
@@ -17,29 +18,53 @@ function formatEta(seconds: number | null): string {
   return `~${m}m ${s}s remaining`;
 }
 
-const INITIAL_NODES: PipelineNode[] = [
-  { id: "import",   label: "Import Data",      icon: "📥", status: "pending" },
-  { id: "clean",    label: "Clean & Organize",  icon: "🧹", status: "pending" },
-  { id: "quality",  label: "Readiness Check",   icon: "📊", status: "pending" },
-  { id: "graph",    label: "Knowledge Graph",   icon: "🕸️",  status: "pending" },
-  { id: "build-ai", label: "Build Custom AI",   icon: "🧠", status: "pending" },
+// The 14-layer semantic-intelligence pipeline (layer 1 = File Upload happens in
+// the Workspace). Node ids match the backend steps[] ids streamed over SSE, so
+// the canvas is driven directly from ev.steps rather than fragile index math.
+const LAYER_NODES: PipelineNode[] = [
+  { id: "extract",        label: "Ingestion & Extraction",   icon: "📥", status: "pending" },
+  { id: "clean",          label: "Cleaning & Normalization", icon: "🧹", status: "pending" },
+  { id: "chunk",          label: "Chunking & Segmentation",  icon: "✂️", status: "pending" },
+  { id: "metadata_intel", label: "Metadata Intelligence",    icon: "🏷️", status: "pending" },
+  { id: "entities",       label: "Entity & Relationship",    icon: "🔗", status: "pending" },
+  { id: "semantic_learn", label: "Semantic Learning",        icon: "🧬", status: "pending" },
+  { id: "eda",            label: "EDA Intelligence",         icon: "📊", status: "pending" },
+  { id: "ml_validation",  label: "ML Validation & Accuracy", icon: "🎯", status: "pending" },
+  { id: "ontology",       label: "Ontology & Governance",    icon: "📐", status: "pending" },
+  { id: "canonical",      label: "Canonicalization",         icon: "🧩", status: "pending" },
+  { id: "graph_build",    label: "Knowledge Graph",          icon: "🕸️", status: "pending" },
+  { id: "graph_validate", label: "Graph Validation",         icon: "✅", status: "pending" },
+  { id: "wiki",           label: "Wiki & Explainability",    icon: "📚", status: "pending" },
+  { id: "embed",          label: "Embedding & Indexing",     icon: "🔢", status: "pending" },
 ];
 
-const RESULT_NODES: PipelineNode[] = [
-  { id: "import",   label: "Import Data",      icon: "📥", status: "done" },
-  { id: "clean",    label: "Clean & Organize",  icon: "🧹", status: "done" },
-  { id: "quality",  label: "Readiness Check",   icon: "📊", status: "done" },
-  { id: "graph",    label: "Knowledge Graph",   icon: "🕸️",  status: "done" },
-  { id: "build-ai", label: "Build Custom AI",   icon: "🧠", status: "done" },
-  { id: "ai",       label: "Select AI Models",  icon: "🤖", status: "pending" },
-  { id: "answer",   label: "Generate Answer",   icon: "✨", status: "pending" },
+// Post-ingest orchestrator phase nodes (appended after the graph is approved).
+const ORCH_NODES: PipelineNode[] = [
+  { id: "build-ai", label: "Build Custom AI",  icon: "🧠", status: "pending" },
+  { id: "ai",       label: "Select AI Models", icon: "🤖", status: "pending" },
+  { id: "answer",   label: "Generate Answer",  icon: "✨", status: "pending" },
 ];
+
+// Milestone toasts fired when a key layer transitions to done.
+const MILESTONES: Record<string, { icon: string; title: string; desc: string }> = {
+  extract:        { icon: "📥", title: "Data ingested!",        desc: "Documents parsed and extracted" },
+  chunk:          { icon: "✂️", title: "Segmentation done!",    desc: "Content split into semantic units" },
+  entities:       { icon: "🔗", title: "Entities extracted!",   desc: "Entities & relationships discovered" },
+  ml_validation:  { icon: "🎯", title: "Validation scored!",    desc: "Accuracy & hallucination risk measured" },
+  graph_build:    { icon: "🕸️", title: "Knowledge graph built!", desc: "Semantic graph constructed" },
+  graph_validate: { icon: "✅", title: "Graph validated!",      desc: "Consistency & trust scored" },
+};
+
+const allLayersDone = (): PipelineNode[] =>
+  LAYER_NODES.map(n => ({ ...n, status: "done" as NodeStatus }));
 
 function ProcessingPage() {
   const [query, setQuery] = useState<string>("");
+  const [jobId, setJobId] = useState<string>("");
   const router = useRouter();
   const searchParams = useSearchParams();
-  const [nodes, setNodes] = useState<PipelineNode[]>(INITIAL_NODES);
+  const [nodes, setNodes] = useState<PipelineNode[]>(LAYER_NODES);
+  const [intelReady, setIntelReady] = useState(false);
   const [overallPct, setOverallPct] = useState(0);
   const [etaSeconds, setEtaSeconds] = useState<number | null>(null);
   const [phase, setPhase] = useState<"ingest" | "orchestrator" | "done">("ingest");
@@ -74,6 +99,13 @@ function ProcessingPage() {
   const [slmExistsRecord, setSlmExistsRecord] = useState<{ model_id: string; domain_label: string; model_path?: string; val_loss?: number; ollama_model_name?: string } | null>(null);
   const [showModelSelector, setShowModelSelector] = useState(false);
   const slmPollRef = useRef<ReturnType<typeof setInterval> | null>(null);
+
+  // Build AI button state (appears after pipeline completes)
+  const [readyToBuildAI, setReadyToBuildAI] = useState(false);
+  const [graphStats, setGraphStats] = useState<{ entityCount: number; topEntities: string[] }>({
+    entityCount: 0,
+    topEntities: []
+  });
 
   const esRef = useRef<EventSource | null>(null);
 
@@ -123,12 +155,19 @@ function ProcessingPage() {
     const domainLabel = sessionStorage.getItem("domain_label") ?? "general";
     const reuseCorpus = sessionStorage.getItem("reuse_corpus") === "true";
     if (!jobId) { router.push("/"); return; }
+    setJobId(jobId);
 
     const API = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8000";
 
     if (reuseCorpus) {
       if (!query) { router.push("/query"); return; }
-      setNodes(RESULT_NODES.map(n => n.id === "ai" ? { ...n, status: "running" as NodeStatus } : n));
+      setNodes([
+        ...allLayersDone(),
+        { id: "build-ai", label: "Build Custom AI",  icon: "🧠", status: "done" as NodeStatus },
+        { id: "ai",       label: "Select AI Models", icon: "🤖", status: "running" as NodeStatus },
+        { id: "answer",   label: "Generate Answer",  icon: "✨", status: "pending" as NodeStatus },
+      ]);
+      setIntelReady(true);
       setOverallPct(100);
       setPhase("orchestrator");
       addLog("Reusing existing knowledge base — starting AI model selection…");
@@ -136,8 +175,8 @@ function ProcessingPage() {
       return;
     }
 
-    setNodeStatus("import", "running");
-    addLog("Import pipeline started — streaming progress…");
+    setNodeStatus("extract", "running");
+    addLog("Pipeline started — streaming 14-layer progress…");
 
     const es = new EventSource(`${API}/api/v1/data/progress/${jobId}`);
     esRef.current = es;
@@ -153,69 +192,54 @@ function ProcessingPage() {
       const status = ev.status;
       addLog(`[${status}] ${ev.overall_pct ?? 0}%`);
 
-      // Drive pipeline node animation from current_step (0-8):
-      // 0=extract, 1=chunk, 2=entities, 3=eda, 4=canonical, 5=resolve, 6=crosslink, 7=graph_wiki, 8=embed
-      const currentStep = ev.current_step ?? 0;
-      if (status === "ingesting") {
-        if (currentStep === 0) {
-          setNodeStatus("import", "running", `${ev.file_count ?? 0} docs`);
-        } else if (currentStep === 1) {
-          if (!gatesShownRef.current.has("import")) {
-            gatesShownRef.current.add("import");
-            setNodeStatus("import", "done", `${ev.file_count ?? 0} docs`);
-            fireAchievement("📥", "Data imported!", `${ev.file_count ?? 0} documents loaded`);
+      // Drive the 14-layer canvas directly from the streamed steps[] array
+      // (id/label/status/pct/detail). Robust to step-count/index changes.
+      const incoming: { id: string; status: string; detail?: string }[] = ev.steps ?? [];
+      if (status === "ingesting" && incoming.length) {
+        const byId = new Map(incoming.map(s => [s.id, s]));
+        setNodes(prev => prev.map(n => {
+          const s = byId.get(n.id);
+          if (!s) return n;
+          return { ...n, status: s.status as NodeStatus, metric: s.detail || n.metric };
+        }));
+        // Milestone celebrations on layer completion (once each).
+        for (const s of incoming) {
+          if (s.status === "done" && MILESTONES[s.id] && !gatesShownRef.current.has(`done:${s.id}`)) {
+            gatesShownRef.current.add(`done:${s.id}`);
+            const m = MILESTONES[s.id];
+            fireAchievement(m.icon, m.title, m.desc);
           }
-          setNodeStatus("clean", "running");
-        } else if (currentStep === 2 || currentStep === 3) {
-          setNodeStatus("import", "done", `${ev.file_count ?? 0} docs`);
-          if (!gatesShownRef.current.has("clean")) {
-            gatesShownRef.current.add("clean");
-            fireAchievement("🧹", "Cleaning complete!", "Chunks extracted and deduplicated");
-          }
-          setNodeStatus("clean", "done");
-          setNodeStatus("quality", "running");
-        } else if (currentStep >= 4) {
-          setNodeStatus("import", "done", `${ev.file_count ?? 0} docs`);
-          setNodeStatus("clean", "done");
-          if (!gatesShownRef.current.has("quality")) {
-            gatesShownRef.current.add("quality");
-            fireAchievement("📊", "Readiness check done!", "Documents scored and filtered");
-          }
-          setNodeStatus("quality", "done");
-          setNodeStatus("graph", "running");
         }
       }
       // "graph_done" — pipeline complete
       if (status === "graph_done") {
-        const entities: string[] = ev.top_entities ?? [];
-        setTopEntities(entities);
+        const topEnts = ev.top_entities ?? [];
+        const entities = topEnts.map((e: any) => e.entity || e).join(", ");
+        setTopEntities(topEnts);
         setStats(p => ({ ...p, entities: ev.entity_count ?? p.entities, communities: ev.community_count ?? p.communities }));
-        setNodeStatus("graph", "waiting-approval");
+
+        // Mark all 14 layers done (preserving their streamed detail) and reveal
+        // the orchestrator phase nodes.
+        setNodes(prev => {
+          const prevById = new Map(prev.map(n => [n.id, n]));
+          const layersDone = LAYER_NODES.map(n => ({
+            ...n, status: "done" as NodeStatus, metric: prevById.get(n.id)?.metric,
+          }));
+          return [...layersDone, ...ORCH_NODES];
+        });
+        setIntelReady(true);
+
+        // Store graph stats for later use
+        setGraphStats({ entityCount: ev.entity_count ?? 0, topEntities: topEnts });
+
+        // Show non-blocking achievement toast
         fireAchievement("🕸️", "Knowledge graph built!", `${ev.entity_count ?? 0} entities discovered!`);
-        await showGate("graph", { entityCount: ev.entity_count ?? 0, topEntities: entities });
-        setNodeStatus("graph", "done", `${ev.entity_count ?? 0} entities`);
+
+        // Enable the Build AI button (instead of showing modals immediately)
+        setReadyToBuildAI(true);
 
         es.close();
-        addLog("Knowledge graph complete — checking for existing custom AI…");
-        setNodeStatus("build-ai", "running", "checking…");
-
-        try {
-          const forCorpusRes = await fetch(`${API}/api/v1/slm/for-corpus?job_id=${jobId}`);
-          const forCorpus = await forCorpusRes.json();
-
-          // Always show the model selector — richer card if model exists, build card if not
-          setSlmExistsRecord(forCorpus.exists ? forCorpus : null);
-          setNodeStatus("build-ai", "waiting-approval");
-          setShowModelSelector(true);
-          addLog(forCorpus.exists
-            ? `ℹ️ Custom AI found: ${forCorpus.model_id}`
-            : "No Custom AI yet — configure your AI in the builder…");
-        } catch {
-          // Fallback: show build card
-          setSlmExistsRecord(null);
-          setNodeStatus("build-ai", "waiting-approval");
-          setShowModelSelector(true);
-        }
+        addLog("✓ Pipeline complete — review your results and click 'Build AI' when ready");
       } else if (status === "failed") {
         addLog(`❌ Pipeline failed: ${ev.error ?? ""}`);
         es.close();
@@ -225,6 +249,42 @@ function ProcessingPage() {
     es.onerror = () => { addLog("⚠ SSE connection lost — retrying…"); };
     return () => { es.close(); esRef.current?.close(); };
   }, []);
+
+  // Handler for "Build AI" button click
+  const handleBuildAIClick = async () => {
+    const API = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
+
+    // Hide the button
+    setReadyToBuildAI(false);
+
+    // Show the Knowledge Graph Built approval gate
+    await showGate("graph", {
+      entityCount: graphStats.entityCount,
+      topEntities: graphStats.topEntities.map((e: any) => e.entity || e).join(", ")
+    });
+
+    addLog("Knowledge graph complete — checking for existing custom AI…");
+    setNodeStatus("build-ai", "running", "checking…");
+
+    // Fetch existing SLM info for this corpus
+    try {
+      const forCorpusRes = await fetch(`${API}/api/v1/slm/for-corpus?job_id=${jobId}`);
+      const forCorpus = await forCorpusRes.json();
+
+      // Always show the model selector — richer card if model exists, build card if not
+      setSlmExistsRecord(forCorpus.exists ? forCorpus : null);
+      setNodeStatus("build-ai", "waiting-approval");
+      setShowModelSelector(true);
+      addLog(forCorpus.exists
+        ? `ℹ️ Custom AI found: ${forCorpus.model_id}`
+        : "No Custom AI yet — configure your AI in the builder…");
+    } catch {
+      // Fallback: show build card
+      setSlmExistsRecord(null);
+      setNodeStatus("build-ai", "waiting-approval");
+      setShowModelSelector(true);
+    }
+  };
 
   const startSlmBuildPolling = (API: string, domainLabel: string, taskId: string | null, navigateAfter: boolean) => {
     if (slmPollRef.current) clearInterval(slmPollRef.current);
@@ -619,6 +679,36 @@ function ProcessingPage() {
             <div className="prog-fill h-2" style={{ width: `${overallPct}%` }} />
           </div>
         </div>
+
+        {/* Show Build AI button after pipeline completes */}
+        {readyToBuildAI && phase === "ingest" && (
+          <div className="mb-6 bg-gradient-to-r from-indigo-50 to-purple-50 dark:from-indigo-950/30 dark:to-purple-950/30 border border-indigo-200 dark:border-indigo-800 rounded-lg p-6 shadow-sm">
+            <div className="flex items-start justify-between gap-4">
+              <div className="flex-1">
+                <div className="flex items-center gap-2 mb-2">
+                  <span className="text-2xl">🎉</span>
+                  <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100">
+                    Pipeline Complete!
+                  </h3>
+                </div>
+                <p className="text-sm text-gray-600 dark:text-gray-400 mb-3">
+                  All 14 layers processed successfully. {graphStats.entityCount.toLocaleString()} entities extracted.
+                  Review the intelligence panels below, then build your custom AI model.
+                </p>
+              </div>
+              <button
+                onClick={handleBuildAIClick}
+                className="px-6 py-3 bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 text-white font-medium rounded-lg shadow-md hover:shadow-lg transition-all duration-200 flex items-center gap-2 whitespace-nowrap"
+              >
+                <span className="text-lg">🧠</span>
+                Build AI
+              </button>
+            </div>
+          </div>
+        )}
+
+        {/* Semantic intelligence layer panels (appear once the graph is built) */}
+        <IntelligencePanels jobId={jobId} ready={intelReady} />
 
         {/* Stats row */}
         {(stats.files > 0 || stats.entities > 0) && (

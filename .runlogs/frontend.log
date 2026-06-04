@@ -1,0 +1,27 @@
+nohup: ignoring input
+
+> orchestrator-frontend@0.1.0 dev
+> next dev --port 3001
+
+  ▲ Next.js 15.0.0
+  - Local:        http://localhost:3001
+
+ ✓ Starting...
+ ✓ Ready in 1301ms
+ ✓ Compiled /middleware in 390ms (91 modules)
+ ○ Compiling /login ...
+ ✓ Compiled /login in 2.7s (584 modules)
+ GET /login 200 in 2911ms
+ ✓ Compiled in 216ms (291 modules)
+ ✓ Compiled / in 203ms (576 modules)
+ GET / 200 in 257ms
+ ✓ Compiled /processing in 318ms (590 modules)
+ GET /processing 200 in 338ms
+ GET / 200 in 9ms
+ GET / 200 in 6ms
+ GET /processing 200 in 6ms
+ ✓ Compiled /query in 374ms (598 modules)
+ GET /query 200 in 414ms
+ ✓ Compiled /login in 117ms (312 modules)
+ GET /login 200 in 189ms
+[?25h

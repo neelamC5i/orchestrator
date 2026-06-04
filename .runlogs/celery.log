@@ -1,0 +1,47 @@
+nohup: ignoring input
+ 
+ -------------- neelam@BTGBSAPP08 v5.4.0 (opalescent)
+--- ***** ----- 
+-- ******* ---- Linux-6.8.0-107-generic-x86_64-with-glibc2.39 2026-06-03 17:42:14
+- *** --- * --- 
+- ** ---------- [config]
+- ** ---------- .> app:         orchestrator:0x7fda47796a80
+- ** ---------- .> transport:   redis://localhost:6379//
+- ** ---------- .> results:     redis://localhost:6379/
+- *** --- * --- .> concurrency: 2 (prefork)
+-- ******* ---- .> task events: OFF (enable -E to monitor tasks in this worker)
+--- ***** ----- 
+ -------------- [queues]
+                .> celery           exchange=celery(direct) key=celery
+                
+
+[tasks]
+  . reindex_pipeline
+  . run_db_pipeline
+  . run_ingest_pipeline
+  . run_slm_build
+
+[2026-06-03 17:42:14,644: WARNING/MainProcess] /tmp/orchestrator_backend_venv/lib/python3.12/site-packages/celery/worker/consumer/consumer.py:508: CPendingDeprecationWarning: The broker_connection_retry configuration setting will no longer determine
+whether broker connection retries are made during startup in Celery 6.0 and above.
+If you wish to retain the existing behavior for retrying connections on startup,
+you should set broker_connection_retry_on_startup to True.
+  warnings.warn(
+
+[2026-06-03 17:42:14,650: INFO/MainProcess] Connected to redis://localhost:6379//
+[2026-06-03 17:42:14,650: WARNING/MainProcess] /tmp/orchestrator_backend_venv/lib/python3.12/site-packages/celery/worker/consumer/consumer.py:508: CPendingDeprecationWarning: The broker_connection_retry configuration setting will no longer determine
+whether broker connection retries are made during startup in Celery 6.0 and above.
+If you wish to retain the existing behavior for retrying connections on startup,
+you should set broker_connection_retry_on_startup to True.
+  warnings.warn(
+
+[2026-06-03 17:42:14,652: INFO/MainProcess] mingle: searching for neighbors
+[2026-06-03 17:42:15,658: WARNING/MainProcess] /tmp/orchestrator_backend_venv/lib/python3.12/site-packages/celery/app/control.py:56: DuplicateNodenameWarning: Received multiple replies from node name: celery@BTGBSAPP08.
+Please make sure you give each node a unique nodename using
+the celery worker `-n` option.
+  warnings.warn(DuplicateNodenameWarning(
+
+[2026-06-03 17:42:15,658: INFO/MainProcess] mingle: sync with 2 nodes
+[2026-06-03 17:42:15,658: INFO/MainProcess] mingle: sync complete
+[2026-06-03 17:42:15,663: INFO/MainProcess] neelam@BTGBSAPP08 ready.
+
+worker: Warm shutdown (MainProcess)
