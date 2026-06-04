@@ -7,7 +7,8 @@ export type ObservatoryTab =
   | "Knowledge Graph"
   | "Confidence"
   | "Validation & Trust"
-  | "Governance & Ontology";
+  | "Governance & Ontology"
+  | "Wiki";
 
 export interface PipelineStageRow {
   id: string;

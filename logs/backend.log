@@ -1,0 +1,30 @@
+INFO:     Started server process [315699]
+INFO:     Waiting for application startup.
+INFO:     Application startup complete.
+INFO:     Uvicorn running on http://0.0.0.0:8000 (Press CTRL+C to quit)
+INFO:     127.0.0.1:44814 - "GET /health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:59396 - "GET /api/v1/data/corpora HTTP/1.1" 200 OK
+INFO:     127.0.0.1:59408 - "GET /api/v1/eda/observatory/3be2ea2e-655f-4957-9c42-ede21b7d8882 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:59420 - "GET /api/v1/eda/observatory/fd79b11f-a6bd-453b-ac21-2e6d9ab4a60b HTTP/1.1" 200 OK
+INFO:     127.0.0.1:59430 - "GET /api/v1/data/progress/3be2ea2e-655f-4957-9c42-ede21b7d8882 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:59436 - "GET /api/v1/models HTTP/1.1" 200 OK
+INFO:     127.0.0.1:59430 - "GET /api/v1/data/intelligence/3be2ea2e-655f-4957-9c42-ede21b7d8882 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:37742 - "GET /api/v1/models/bandit-status HTTP/1.1" 200 OK
+INFO:     127.0.0.1:37746 - "GET /api/v1/slm/learning-progress HTTP/1.1" 200 OK
+INFO:     127.0.0.1:37760 - "GET /api/v1/slm/stats HTTP/1.1" 200 OK
+INFO:     127.0.0.1:37762 - "GET /api/v1/models/insights/general_reasoning HTTP/1.1" 200 OK
+INFO:     127.0.0.1:37766 - "GET /api/v1/data/wiki/3be2ea2e-655f-4957-9c42-ede21b7d8882 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:52298 - "GET /api/v1/slm/status?domain_label=it-industry HTTP/1.1" 200 OK
+INFO:     127.0.0.1:37766 - "GET /api/v1/slm/registry HTTP/1.1" 200 OK
+INFO:     127.0.0.1:37766 - "GET /api/v1/slm/suggestions?domain_label=it-industry&job_id=3be2ea2e-655f-4957-9c42-ede21b7d8882 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:58220 - "POST /api/v1/data/ingest HTTP/1.1" 200 OK
+INFO:     127.0.0.1:58220 - "GET /api/v1/data/progress/52e5eab1-ab76-442b-8af0-1ec25f0de229 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:58242 - "GET /api/v1/eda/observatory/52e5eab1-ab76-442b-8af0-1ec25f0de229 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:58236 - "GET /api/v1/models HTTP/1.1" 200 OK
+INFO:     127.0.0.1:58254 - "GET /api/v1/data/corpora HTTP/1.1" 200 OK
+INFO:     127.0.0.1:58260 - "GET /api/v1/eda/observatory/fd79b11f-a6bd-453b-ac21-2e6d9ab4a60b HTTP/1.1" 200 OK
+INFO:     127.0.0.1:36024 - "GET /api/v1/eda/observatory/52e5eab1-ab76-442b-8af0-1ec25f0de229 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:58220 - "GET /api/v1/data/intelligence/52e5eab1-ab76-442b-8af0-1ec25f0de229 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:36028 - "GET /api/v1/eda/observatory/52e5eab1-ab76-442b-8af0-1ec25f0de229 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:35182 - "GET /api/v1/data/corpora HTTP/1.1" 200 OK
+INFO:     127.0.0.1:35196 - "GET /api/v1/data/corpora HTTP/1.1" 200 OK

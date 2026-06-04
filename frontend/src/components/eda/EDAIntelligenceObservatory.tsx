@@ -12,6 +12,7 @@ import KnowledgeGraphTab from "./KnowledgeGraphTab";
 import ConfidenceTab from "./ConfidenceTab";
 import ValidationTrustTab from "./ValidationTrustTab";
 import GovernanceOntologyTab from "./GovernanceOntologyTab";
+import WikiTab from "./WikiTab";
 
 const TABS: ObservatoryTab[] = [
   "Pipeline",
@@ -23,11 +24,13 @@ const TABS: ObservatoryTab[] = [
   "Confidence",
   "Validation & Trust",
   "Governance & Ontology",
+  "Wiki",
 ];
 
 export default function EDAIntelligenceObservatory({ jobId }: { jobId: string }) {
   const [activeTab, setActiveTab] = useState<ObservatoryTab>("Pipeline");
   const [data, setData] = useState<ObservatoryData | null>(null);
+  const [wikiPages, setWikiPages] = useState<any[]>([]);
   const [loading, setLoading] = useState(false);
   const [emptyMessage, setEmptyMessage] = useState(
     "No data ingested yet — upload files or connect a database to populate this view."
@@ -63,6 +66,17 @@ export default function EDAIntelligenceObservatory({ jobId }: { jobId: string })
       return await r.json();
     };
 
+    const fetchWiki = async (targetJobId: string): Promise<any[]> => {
+      try {
+        const r = await fetch(`${API}/api/v1/wiki/${targetJobId}/pages?limit=200`);
+        if (!r.ok) return [];
+        const payload = await r.json();
+        return Array.isArray(payload?.pages) ? payload.pages : [];
+      } catch {
+        return [];
+      }
+    };
+
     const load = async (showLoader: boolean) => {
       try {
         if (showLoader) setLoading(true);
@@ -94,6 +108,7 @@ export default function EDAIntelligenceObservatory({ jobId }: { jobId: string })
 
         if (!cancelled) {
           setData(d);
+          setWikiPages(targetJobId ? await fetchWiki(targetJobId) : []);
           if (!targetJobId) {
             setEmptyMessage("No completed ingestion found yet. Upload files or connect a database to start the pipeline.");
           } else if (!d) {
@@ -145,23 +160,24 @@ export default function EDAIntelligenceObservatory({ jobId }: { jobId: string })
     if (activeTab === "Knowledge Graph") return <KnowledgeGraphTab data={data} />;
     if (activeTab === "Confidence") return <ConfidenceTab data={data} />;
     if (activeTab === "Validation & Trust") return <ValidationTrustTab data={data} />;
-    return <GovernanceOntologyTab data={data} />;
-  }, [data, activeTab, emptyMessage]);
+    if (activeTab === "Governance & Ontology") return <GovernanceOntologyTab data={data} />;
+    return <WikiTab pages={wikiPages} />;
+  }, [data, activeTab, emptyMessage, wikiPages]);
 
   return (
     <div className="mb-8">
       <div className="sect">EDA Intelligence Observatory</div>
-      <div className="bg-white border border-dborder rounded-2xl overflow-hidden shadow-sm">
-        <div className="px-4 py-3 border-b border-dborder bg-bg3">
-          <div className="flex flex-wrap gap-2">
+      <div className="h-[78vh] min-h-[620px] rounded-2xl border border-slate-200 bg-gradient-to-br from-slate-50 via-blue-50/50 to-indigo-50/70 shadow-sm">
+        <div className="sticky top-0 z-10 border-b border-slate-200 bg-white/90 px-3 py-2 backdrop-blur">
+          <div className="flex flex-wrap gap-1">
             {TABS.map((tab) => (
               <button
                 key={tab}
                 onClick={() => setActiveTab(tab)}
-                className={`px-3 py-1.5 rounded-full text-[11px] border transition ${
+                className={`rounded-full border px-3 py-1.5 text-[11px] font-semibold transition ${
                   activeTab === tab
-                    ? "bg-accent text-white border-accent"
-                    : "bg-white text-t2 border-dborder hover:border-accent/40"
+                    ? "border-blue-600 bg-blue-600 text-white"
+                    : "border-slate-300 bg-white text-slate-600 hover:border-blue-300"
                 }`}
               >
                 {tab}
@@ -169,8 +185,13 @@ export default function EDAIntelligenceObservatory({ jobId }: { jobId: string })
             ))}
           </div>
         </div>
-        <div className="p-4">
-          {loading ? <div className="text-[11px] text-t3">Loading observability data…</div> : body}
+
+        <div className="h-[calc(78vh-64px)] min-h-0 p-3">
+          {loading ? (
+            <div className="rounded-xl border border-slate-200 bg-white p-3 text-[11px] text-slate-500">Loading observability data…</div>
+          ) : (
+            <div className="h-full min-h-0 overflow-auto pr-1">{body}</div>
+          )}
         </div>
       </div>
     </div>

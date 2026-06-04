@@ -1,55 +1,57 @@
 "use client";
 
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { ObservatoryData } from "./types";
 import { EmptyState, fmtBytes, fmtNum } from "./common";
-
-function statusDot(status: string): string {
-  if (status === "done") return "bg-gg";
-  if (status === "running") return "bg-amber";
-  if (status === "failed") return "bg-coral";
-  return "bg-t3";
-}
+import PipelineTimeline from "./PipelineTimeline";
+import InspectorPanel from "./InspectorPanel";
+import KpiCard from "./KpiCard";
 
 export default function PipelineTab({ data }: { data: ObservatoryData }) {
   const stages = data.pipeline?.stages ?? [];
-  const [expanded, setExpanded] = useState<Record<string, boolean>>({});
+  const [selectedId, setSelectedId] = useState<string | undefined>(stages[0]?.id);
 
   if (!stages.length) return <EmptyState />;
 
+  const selected = useMemo(() => stages.find((s) => s.id === selectedId) ?? stages[0], [selectedId, stages]);
+  const okCount = stages.filter((s) => s.status === "done").length;
+  const warnCount = stages.filter((s) => s.status === "running").length;
+  const failCount = stages.filter((s) => s.status === "failed").length;
+
   return (
-    <div className="card overflow-hidden p-0">
-      <div className="divide-y divide-dborder">
-        {stages.map((s) => {
-          const isOpen = !!expanded[s.id];
-          return (
-            <div key={s.id}>
-              <button
-                className="w-full px-4 py-3 flex items-center gap-3 text-left hover:bg-bg3"
-                onClick={() => setExpanded((p) => ({ ...p, [s.id]: !p[s.id] }))}
-              >
-                <span className={`w-2 h-2 rounded-full ${statusDot(s.status)}`} />
-                <span className="text-[12px] font-semibold text-t1">{s.label}</span>
-                <span className="text-[11px] text-t3">{s.detail ?? ""}</span>
-                <span className="ml-auto text-[11px] text-t3">{isOpen ? "▾" : "▸"}</span>
-              </button>
-              {isOpen && (
-                <div className="px-4 pb-4 pt-1 border-t border-dborder bg-bg3">
-                  <div className="grid grid-cols-2 md:grid-cols-4 gap-2 text-[11px]">
-                    <div className="mcard"><div className="text-t3">Input Size</div><div className="text-t1 font-semibold">{fmtBytes(s.input_size_bytes)}</div></div>
-                    <div className="mcard"><div className="text-t3">Output Size</div><div className="text-t1 font-semibold">{fmtBytes(s.output_size_bytes)}</div></div>
-                    <div className="mcard"><div className="text-t3">Processing Time</div><div className="text-t1 font-semibold">{s.processing_time_ms ? `${fmtNum(s.processing_time_ms)} ms` : "-"}</div></div>
-                    <div className="mcard"><div className="text-t3">Progress</div><div className="text-t1 font-semibold">{s.pct ?? 0}%</div></div>
-                  </div>
-                  <div className="mt-2 text-[11px] text-t3">
-                    <div>Warnings: {(s.warnings ?? []).length ? (s.warnings ?? []).join(", ") : "None"}</div>
-                    <div>Errors: {(s.errors ?? []).length ? (s.errors ?? []).join(", ") : "None"}</div>
-                  </div>
-                </div>
-              )}
+    <div className="flex h-full flex-col gap-3">
+      <div className="grid grid-cols-2 gap-2 xl:grid-cols-4">
+        <KpiCard label="Total Layers" value={`${stages.length}`} />
+        <KpiCard label="OK" value={`${okCount}`} tone="success" />
+        <KpiCard label="Warning" value={`${warnCount}`} tone="warning" />
+        <KpiCard label="Failed" value={`${failCount}`} tone="risk" />
+      </div>
+      <div className="grid min-h-0 flex-1 grid-cols-1 gap-3 xl:grid-cols-[2fr_1fr]">
+        <PipelineTimeline stages={stages} selectedId={selectedId} onSelect={(s) => setSelectedId(s.id)} />
+        <InspectorPanel title="Layer Inspector">
+          {selected ? (
+            <div className="space-y-2 text-[12px]">
+              <div className="rounded-lg bg-slate-50 p-2">
+                <div className="text-[10px] uppercase tracking-wider text-slate-500">Layer</div>
+                <div className="font-semibold text-slate-900">{selected.label}</div>
+              </div>
+              <div className="rounded-lg bg-slate-50 p-2"><span className="text-slate-500">Status:</span> {selected.status}</div>
+              <div className="rounded-lg bg-slate-50 p-2"><span className="text-slate-500">Progress:</span> {selected.pct ?? 0}%</div>
+              <div className="rounded-lg bg-slate-50 p-2"><span className="text-slate-500">Input size:</span> {fmtBytes(selected.input_size_bytes)}</div>
+              <div className="rounded-lg bg-slate-50 p-2"><span className="text-slate-500">Output size:</span> {fmtBytes(selected.output_size_bytes)}</div>
+              <div className="rounded-lg bg-slate-50 p-2"><span className="text-slate-500">Processing:</span> {selected.processing_time_ms ? `${fmtNum(selected.processing_time_ms)} ms` : "Not available"}</div>
+              <div className="rounded-lg bg-slate-50 p-2"><span className="text-slate-500">Description:</span> {selected.detail || "Pending data"}</div>
+              <div className="rounded-lg bg-slate-50 p-2">
+                <div className="text-slate-500">Warnings</div>
+                <div>{(selected.warnings ?? []).length ? (selected.warnings ?? []).join(", ") : "None"}</div>
+              </div>
+              <div className="rounded-lg bg-slate-50 p-2">
+                <div className="text-slate-500">Errors</div>
+                <div>{(selected.errors ?? []).length ? (selected.errors ?? []).join(", ") : "None"}</div>
+              </div>
             </div>
-          );
-        })}
+          ) : null}
+        </InspectorPanel>
       </div>
     </div>
   );

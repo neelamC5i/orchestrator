@@ -28,9 +28,9 @@ def _load_json(path: str):
 
 
 def _safe_load(path: Path) -> dict[str, Any] | None:
-    if not path.is_file():
-        return None
     try:
+        if not path.is_file():
+            return None
         with path.open(encoding="utf-8") as f:
             data = json.load(f)
         return data if isinstance(data, dict) else None
@@ -64,7 +64,9 @@ def _resolve_corpus_path(row: dict[str, Any], job_id: str) -> Path:
             meta = {}
     corpus_dir = meta.get("corpus_dir")
     if corpus_dir:
-        return Path(corpus_dir)
+        candidate = Path(corpus_dir)
+        if candidate.exists() and os.access(candidate, os.R_OK | os.X_OK):
+            return candidate
     return Path("corpus_store") / job_id
 
 
@@ -742,6 +744,10 @@ async def observatory(job_id: str, db: AsyncSession = Depends(get_db)):
         bool(pipeline_rows),
         bool(extraction_payload.get("lineage")),
         bool(metadata_payload.get("richness_heatmap")),
+        bool(eda_payload.get("column_statistics")),
+        bool(eda_payload.get("histograms")),
+        bool(eda_payload.get("outliers")),
+        bool(eda_payload.get("box_plots")),
         bool(kg_payload.get("top_connected_entities")),
     ])
 

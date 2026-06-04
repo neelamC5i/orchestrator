@@ -3,15 +3,8 @@
 import { useMemo, useState } from "react";
 import { ObservatoryData } from "./types";
 import { EmptyState, fmtPct } from "./common";
-
-function cellColor(v?: number | null): string {
-  if (v === null || v === undefined) return "#c9ccd6";
-  const n = Math.max(0, Math.min(1, Number(v)));
-  if (n >= 0.8) return "#16a34a";
-  if (n >= 0.6) return "#7c6af8";
-  if (n >= 0.4) return "#d97706";
-  return "#e63755";
-}
+import ConfidenceHeatmap from "./ConfidenceHeatmap";
+import InspectorPanel from "./InspectorPanel";
 
 export default function ConfidenceTab({ data }: { data: ObservatoryData }) {
   const [selected, setSelected] = useState<{ entity: string; stage: string } | null>(null);
@@ -27,56 +20,39 @@ export default function ConfidenceTab({ data }: { data: ObservatoryData }) {
   }, [selected, breakdown]);
 
   return (
-    <div className="space-y-3">
-      <div className="card overflow-auto">
-        <div className="sect">Semantic Confidence Heatmap</div>
-        <table className="w-full text-[11px] border-collapse">
-          <thead>
-            <tr className="border-b border-dborder text-left text-t3">
-              <th className="py-2 pr-2">Entity</th>
-              {stages.map((s) => <th key={s} className="py-2 pr-2">{s}</th>)}
-            </tr>
-          </thead>
-          <tbody>
-            {matrix.map((row) => (
-              <tr key={row.entity} className="border-b border-dborder/60">
-                <td className="py-2 pr-2 text-t2">{row.entity}</td>
-                {stages.map((stage) => {
-                  const v = row.stages?.[stage];
-                  return (
-                    <td key={`${row.entity}-${stage}`} className="py-1 pr-2">
-                      <button
-                        className="w-full text-left px-2 py-1 rounded text-white"
-                        style={{ background: cellColor(v ?? null) }}
-                        onClick={() => setSelected({ entity: row.entity, stage })}
-                      >
-                        {fmtPct(v ?? null)}
-                      </button>
-                    </td>
-                  );
-                })}
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      </div>
+    <div className="grid h-full min-h-0 grid-cols-1 gap-3 xl:grid-cols-[2fr_1fr]">
+      <ConfidenceHeatmap data={data} onSelect={(entity, stage) => setSelected({ entity, stage })} />
 
-      {selected && selectedData && (
-        <div className="card">
-          <div className="sect">Confidence Breakdown</div>
-          <div className="text-[12px] text-t2">Entity: {selectedData.entity}</div>
-          <div className="text-[11px] text-t3">Canonical ID: {selectedData.canonical_id ?? "-"}</div>
-          <div className="text-[11px] text-t3">Type: {selectedData.entity_type ?? "-"}</div>
-          <div className="grid grid-cols-2 md:grid-cols-5 gap-2 mt-2">
-            {stages.map((s) => (
-              <div className="mcard" key={s}>
-                <div className="text-[10px] text-t3">{s}</div>
-                <div className="text-[14px] font-semibold text-t1">{fmtPct(selectedData.stages?.[s] ?? null)}</div>
-              </div>
-            ))}
+      <InspectorPanel title="Confidence Detail" emptyMessage="Click a heatmap cell to inspect score details.">
+        {selected && selectedData ? (
+          <div className="space-y-2">
+            <div className="rounded-lg bg-slate-50 p-2 text-[12px] text-slate-700">
+              <div className="text-[10px] uppercase tracking-wider text-slate-500">Entity</div>
+              <div className="font-semibold text-slate-900">{selectedData.entity}</div>
+            </div>
+            <div className="rounded-lg bg-slate-50 p-2 text-[12px] text-slate-700">
+              <span className="text-slate-500">Layer:</span> {selected.stage}
+            </div>
+            <div className="rounded-lg bg-slate-50 p-2 text-[12px] text-slate-700">
+              <span className="text-slate-500">Canonical ID:</span> {selectedData.canonical_id ?? "-"}
+            </div>
+            <div className="rounded-lg bg-slate-50 p-2 text-[12px] text-slate-700">
+              <span className="text-slate-500">Type:</span> {selectedData.entity_type ?? "-"}
+            </div>
+            <div className="grid grid-cols-2 gap-2">
+              {stages.map((s) => (
+                <div className="rounded-lg border border-slate-200 bg-white p-2" key={s}>
+                  <div className="text-[10px] text-slate-500">{s}</div>
+                  <div className="text-[12px] font-semibold text-slate-800">{fmtPct(selectedData.stages?.[s] ?? null)}</div>
+                </div>
+              ))}
+            </div>
+            <div className="rounded-lg bg-slate-50 p-2 text-[11px] text-slate-600">
+              Formula / reason: score reflects stage confidence provided by backend payload.
+            </div>
           </div>
-        </div>
-      )}
+        ) : null}
+      </InspectorPanel>
     </div>
   );
 }

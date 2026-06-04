@@ -3,11 +3,11 @@
   "/dashboard/page": "app/dashboard/page.js",
   "/login/page": "app/login/page.js",
   "/page": "app/page.js",
-  "/planning/page": "app/planning/page.js",
   "/quality/page": "app/quality/page.js",
+  "/planning/page": "app/planning/page.js",
   "/processing/page": "app/processing/page.js",
   "/query/page": "app/query/page.js",
   "/templates/page": "app/templates/page.js",
-  "/wiki/page": "app/wiki/page.js",
-  "/recommendations/page": "app/recommendations/page.js"
+  "/recommendations/page": "app/recommendations/page.js",
+  "/wiki/page": "app/wiki/page.js"
 }

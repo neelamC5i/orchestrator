@@ -2,33 +2,37 @@
 
 import { ObservatoryData } from "./types";
 import { EmptyState, fmtNum, fmtPct } from "./common";
+import KpiCard from "./KpiCard";
 
 export default function ValidationTrustTab({ data }: { data: ObservatoryData }) {
   const v = data.validation_trust;
   if (!v) return <EmptyState />;
 
   return (
-    <div className="space-y-3">
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-        <div className="mcard"><div className="text-[10px] text-t3">Schema Errors</div><div className="text-[18px] font-bold text-t1">{fmtNum(v.validation_errors?.schema ?? 0)}</div></div>
-        <div className="mcard"><div className="text-[10px] text-t3">Null Errors</div><div className="text-[18px] font-bold text-t1">{fmtNum(v.validation_errors?.nulls ?? null)}</div></div>
-        <div className="mcard"><div className="text-[10px] text-t3">Duplicate Errors</div><div className="text-[18px] font-bold text-t1">{fmtNum(v.validation_errors?.duplicates ?? 0)}</div></div>
-        <div className="mcard"><div className="text-[10px] text-t3">Ontology Violations</div><div className="text-[18px] font-bold text-t1">{fmtNum(v.ontology_violations ?? 0)}</div></div>
+    <div className="flex h-full flex-col gap-3">
+      <div className="grid grid-cols-2 gap-2 xl:grid-cols-5">
+        <KpiCard label="Graph Trust Score" value={fmtPct(v.trust_breakdown?.graph_trust ?? null)} tooltip="Composite trust score for graph structure and consistency." />
+        <KpiCard label="Hallucination Risk" value="Not available" tone="warning" tooltip="Not present in current observatory payload." />
+        <KpiCard label="Calibration Error" value="Not available" tooltip="Expected calibration error is pending from model validation payload." />
+        <KpiCard label="Metadata Coverage" value={fmtPct(v.trust_breakdown?.consistency ?? null)} />
+        <KpiCard label="Retrieval Proxy" value={fmtPct(v.trust_breakdown?.f1_proxy ?? null)} />
       </div>
 
-      <div className="mcard inline-block">
-        <div className="text-[10px] text-t3">Orphan Nodes</div>
-        <div className="text-[18px] font-bold text-t1">{fmtNum(v.orphan_nodes ?? 0)}</div>
+      <div className="grid grid-cols-2 gap-2 xl:grid-cols-4">
+        <KpiCard label="Entity Precision" value="Not available" />
+        <KpiCard label="Entity Recall" value="Not available" />
+        <KpiCard label="Entity F1" value={fmtPct(v.trust_breakdown?.f1_proxy ?? null)} />
+        <KpiCard label="Relationship F1" value={fmtPct(v.trust_breakdown?.confidence ?? null)} />
       </div>
 
-      <div className="card">
-        <div className="sect">Trust Score Breakdown</div>
-        <div className="grid grid-cols-2 md:grid-cols-5 gap-2 text-[11px]">
-          <div className="mcard"><div className="text-t3">Trust</div><div className="text-t1 font-semibold">{fmtPct(v.trust_breakdown?.trust_score ?? null)}</div></div>
-          <div className="mcard"><div className="text-t3">Consistency</div><div className="text-t1 font-semibold">{fmtPct(v.trust_breakdown?.consistency ?? null)}</div></div>
-          <div className="mcard"><div className="text-t3">Confidence</div><div className="text-t1 font-semibold">{fmtPct(v.trust_breakdown?.confidence ?? null)}</div></div>
-          <div className="mcard"><div className="text-t3">Graph Trust</div><div className="text-t1 font-semibold">{fmtPct(v.trust_breakdown?.graph_trust ?? null)}</div></div>
-          <div className="mcard"><div className="text-t3">F1 Proxy</div><div className="text-t1 font-semibold">{fmtPct(v.trust_breakdown?.f1_proxy ?? null)}</div></div>
+      <div className="rounded-xl border border-slate-200 bg-white p-3 shadow-sm">
+        <div className="mb-2 text-[11px] font-semibold uppercase tracking-wider text-slate-500">Validation Counters</div>
+        <div className="grid grid-cols-2 gap-2 text-[11px] md:grid-cols-5">
+          <div className="rounded-lg bg-slate-50 p-2"><span className="text-slate-500">Schema:</span> {fmtNum(v.validation_errors?.schema ?? 0)}</div>
+          <div className="rounded-lg bg-slate-50 p-2"><span className="text-slate-500">Nulls:</span> {fmtNum(v.validation_errors?.nulls ?? null)}</div>
+          <div className="rounded-lg bg-slate-50 p-2"><span className="text-slate-500">Duplicates:</span> {fmtNum(v.validation_errors?.duplicates ?? 0)}</div>
+          <div className="rounded-lg bg-slate-50 p-2"><span className="text-slate-500">Ontology Violations:</span> {fmtNum(v.ontology_violations ?? 0)}</div>
+          <div className="rounded-lg bg-slate-50 p-2"><span className="text-slate-500">Orphan Nodes:</span> {fmtNum(v.orphan_nodes ?? 0)}</div>
         </div>
       </div>
     </div>

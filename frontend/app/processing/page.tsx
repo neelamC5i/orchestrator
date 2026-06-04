@@ -59,6 +59,38 @@ const MILESTONES: Record<string, { icon: string; title: string; desc: string }> 
 const allLayersDone = (): PipelineNode[] =>
   LAYER_NODES.map(n => ({ ...n, status: "done" as NodeStatus }));
 
+function computeLayerProgress(
+  steps: Array<{ id: string; status?: string; pct?: number }>,
+  previousPct: number,
+): number {
+  if (!steps.length) return previousPct;
+
+  const byId = new Map(steps.map((s) => [s.id, s]));
+  let totalUnits = 0;
+
+  for (const layer of LAYER_NODES) {
+    const s = byId.get(layer.id);
+    if (!s) continue;
+    const status = (s.status ?? "").toLowerCase();
+
+    if (status === "done") {
+      totalUnits += 1;
+      continue;
+    }
+    if (status === "running") {
+      const pct = Math.max(0, Math.min(100, Number(s.pct ?? 0)));
+      totalUnits += pct / 100;
+      continue;
+    }
+    if (status === "failed") {
+      totalUnits += 1;
+      continue;
+    }
+  }
+
+  return Math.max(0, Math.min(100, Math.round((totalUnits / LAYER_NODES.length) * 100)));
+}
+
 function ProcessingPage() {
   const [query, setQuery] = useState<string>("");
   const [jobId, setJobId] = useState<string>("");
@@ -184,7 +216,6 @@ function ProcessingPage() {
 
     es.onmessage = async (e) => {
       const ev = JSON.parse(e.data);
-      setOverallPct(ev.overall_pct ?? 0);
       setEtaSeconds(ev.eta_seconds ?? null);
       if (ev.file_count)      setStats(p => ({ ...p, files: ev.file_count }));
       if (ev.entity_count)    setStats(p => ({ ...p, entities: ev.entity_count }));
@@ -195,7 +226,8 @@ function ProcessingPage() {
 
       // Drive the 14-layer canvas directly from the streamed steps[] array
       // (id/label/status/pct/detail). Robust to step-count/index changes.
-      const incoming: { id: string; status: string; detail?: string }[] = ev.steps ?? [];
+      const incoming: { id: string; status: string; detail?: string; pct?: number }[] = ev.steps ?? [];
+      setOverallPct((prev) => computeLayerProgress(incoming, prev));
       if (status === "ingesting" && incoming.length) {
         const byId = new Map(incoming.map(s => [s.id, s]));
         setNodes(prev => prev.map(n => {
@@ -214,6 +246,7 @@ function ProcessingPage() {
       }
       // "graph_done" — pipeline complete
       if (status === "graph_done") {
+        setOverallPct(100);
         const topEnts = ev.top_entities ?? [];
         const entities = topEnts.map((e: any) => e.entity || e).join(", ");
         setTopEntities(topEnts);
