@@ -46,8 +46,11 @@ async def ingest(
     force_reingest: bool = Form(default=False),
     db: AsyncSession = Depends(get_db),
 ):
+    has_new_input = len(files) > 0 or bool(db_type)
+
     # Deduplication: if a completed corpus already exists for this domain, reuse it
-    if not force_reingest:
+    # Only reuse when caller did not provide any new files/DB input.
+    if not force_reingest and not has_new_input:
         existing = await db.execute(text("""
             SELECT job_id, file_count, entity_count, graph_path, created_at
             FROM ingest_jobs
@@ -107,7 +110,7 @@ async def ingest(
     # Dispatch Celery task
     try:
         from app.tasks.ingest_task import run_ingest_pipeline
-        run_ingest_pipeline.delay(job_id)
+        run_ingest_pipeline.apply_async(args=[job_id], queue="ingest")
     except Exception as exc:
         return JSONResponse({"job_id": job_id, "status": "queued", "warning": str(exc)})
 
@@ -432,7 +435,7 @@ async def scrape_url(req: ScrapeRequest, db: AsyncSession = Depends(get_db)):
     # ── Dispatch Celery task ─────────────────────────────────────────────────
     try:
         from app.tasks.ingest_task import run_ingest_pipeline
-        run_ingest_pipeline.delay(job_id)
+        run_ingest_pipeline.apply_async(args=[job_id], queue="ingest")
     except Exception as exc:
         return JSONResponse({"job_id": job_id, "status": "queued", "warning": str(exc)})
 
@@ -588,11 +591,11 @@ async def retry_job(job_id: str, db: AsyncSession = Depends(get_db)):
     try:
         if graph_exists:
             from app.tasks.ingest_task import reindex_pipeline
-            reindex_pipeline.delay(job_id, corpus_dir)
+            reindex_pipeline.apply_async(args=[job_id], queue="ingest")
             return {"job_id": job_id, "mode": "reindex_only", "status": "queued"}
         else:
             from app.tasks.ingest_task import run_ingest_pipeline
-            run_ingest_pipeline.delay(job_id)
+            run_ingest_pipeline.apply_async(args=[job_id], queue="ingest")
             return {"job_id": job_id, "mode": "full_pipeline", "status": "queued"}
     except Exception as exc:
         return JSONResponse({"job_id": job_id, "status": "queued", "warning": str(exc)})
@@ -609,7 +612,7 @@ async def repair_job(job_id: str, db: AsyncSession = Depends(get_db)):
     await db.commit()
     try:
         from app.tasks.ingest_task import run_ingest_pipeline
-        run_ingest_pipeline.delay(job_id)
+        run_ingest_pipeline.apply_async(args=[job_id], queue="ingest")
     except Exception as exc:
         return JSONResponse({"job_id": job_id, "status": "queued", "warning": str(exc)})
     return {"job_id": job_id, "mode": "full_pipeline", "status": "queued"}
@@ -794,7 +797,7 @@ async def load_sample_corpus(
 
     # Launch Celery ingest task
     from app.tasks.ingest_task import run_ingest_pipeline
-    run_ingest_pipeline.delay(job_id)
+    run_ingest_pipeline.apply_async(args=[job_id], queue="ingest")
 
     return {
         "job_id": job_id,

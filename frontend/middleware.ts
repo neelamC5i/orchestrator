@@ -30,5 +30,5 @@ export function middleware(request: NextRequest) {
 
 export const config = {
   // Run on all page routes (not API routes, static files, or public assets)
-  matcher: ["/((?!_next/static|_next/image|favicon.ico|.*\\.(?:png|jpg|jpeg|gif|svg|ico|webp|css|js|woff2?|ttf)).*)"],
+  matcher: ["/((?!api|_next/static|_next/image|favicon.ico|.*\\.(?:png|jpg|jpeg|gif|svg|ico|webp|css|js|woff2?|ttf)).*)"],
 };

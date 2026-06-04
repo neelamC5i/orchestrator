@@ -7,6 +7,7 @@ import ApprovalGate, { type GateStep } from "../components/ApprovalGate";
 import AchievementToast, { fireAchievement } from "../components/AchievementToast";
 import SLMStudio, { type SLMConfig } from "../components/SLMStudio";
 import IntelligencePanels from "../components/IntelligencePanels";
+import EDAIntelligenceObservatory from "../../src/components/eda/EDAIntelligenceObservatory";
 
 interface EpochEntry { epoch: number; loss: number; }
 
@@ -706,6 +707,9 @@ function ProcessingPage() {
             </div>
           </div>
         )}
+
+        {/* EDA observability layer */}
+        <EDAIntelligenceObservatory jobId={jobId} />
 
         {/* Semantic intelligence layer panels (appear once the graph is built) */}
         <IntelligencePanels jobId={jobId} ready={intelReady} />

@@ -13,6 +13,8 @@ from pydantic import BaseModel
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import text
 from typing import List, Optional
+import json
+from pathlib import Path
 
 from app.db.database import get_db
 
@@ -21,12 +23,28 @@ router = APIRouter(prefix="/wiki", tags=["wiki"])
 
 async def _corpus_dir(job_id: str, db: AsyncSession) -> str:
     row = (await db.execute(
-        text("SELECT job_id FROM ingest_jobs WHERE job_id = :id"),
+        text("SELECT graph_path, metadata FROM ingest_jobs WHERE job_id = :id"),
         {"id": job_id},
-    )).fetchone()
+    )).mappings().first()
     if not row:
         raise HTTPException(status_code=404, detail="job not found")
-    return f"corpus_store/{job_id}"
+
+    graph_path = row.get("graph_path")
+    if graph_path:
+        return str(Path(graph_path).parent.parent)
+
+    meta = row.get("metadata") or {}
+    if isinstance(meta, str):
+        try:
+            meta = json.loads(meta)
+        except Exception:
+            meta = {}
+
+    corpus_dir = meta.get("corpus_dir")
+    if corpus_dir:
+        return str(corpus_dir)
+
+    return str(Path("corpus_store") / job_id)
 
 
 class ReviewDecision(BaseModel):
