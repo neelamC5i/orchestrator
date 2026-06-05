@@ -1,8 +1,10 @@
 "use client";
 
-import { useEffect, useState, useRef, Suspense } from "react";
+import { useEffect, useState, useRef, useCallback, Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import PipelineCanvas, { type PipelineNode, type NodeStatus } from "../components/PipelineCanvas";
+import PipelineLayerList, { type PipelineLayer } from "../components/PipelineLayerList";
+import LayerDetailPanel from "../components/LayerDetailPanel";
 import ApprovalGate, { type GateStep } from "../components/ApprovalGate";
 import AchievementToast, { fireAchievement } from "../components/AchievementToast";
 import SLMStudio, { type SLMConfig } from "../components/SLMStudio";
@@ -35,18 +37,89 @@ const RESULT_NODES: PipelineNode[] = [
   { id: "answer",   label: "Generate Answer",   icon: "✨", status: "pending" },
 ];
 
+const PIPELINE_TABS = [
+  { id: "pipeline",   label: "Pipeline" },
+  { id: "overview",   label: "Overview" },
+  { id: "extraction", label: "Extraction" },
+  { id: "metadata",   label: "Metadata" },
+  { id: "eda",        label: "EDA" },
+  { id: "kg",         label: "Knowledge Graph" },
+  { id: "confidence", label: "Confidence" },
+  { id: "validation", label: "Validation & Trust" },
+  { id: "governance", label: "Governance & Ontology" },
+  { id: "wiki",       label: "Wiki" },
+] as const;
+
+const TAB_LAYER_MAP: Record<string, string[]> = {
+  pipeline:   [],
+  overview:   ["upload", "extract", "clean", "chunk", "metadata", "entities", "semantic", "eda", "validation", "ontology", "canonical", "graph_build", "graph_consist", "wiki"],
+  extraction: ["upload", "extract"],
+  metadata:   ["metadata"],
+  eda:        ["eda", "validation"],
+  kg:         ["graph_build", "graph_consist"],
+  confidence: ["semantic"],
+  validation: ["validation", "ontology"],
+  governance: ["ontology"],
+  wiki:       ["wiki"],
+};
+
+function makeEmptyLayers(): PipelineLayer[] {
+  return [
+    { id: "upload",        label: "File Upload + Lineage",      status: "pending", pct: 0, detail: "", started_at: null, completed_at: null, error_code: null },
+    { id: "extract",       label: "Ingestion & Extraction",     status: "pending", pct: 0, detail: "", started_at: null, completed_at: null, error_code: null },
+    { id: "clean",         label: "Cleaning + Normalization",    status: "pending", pct: 0, detail: "", started_at: null, completed_at: null, error_code: null },
+    { id: "chunk",         label: "Chunking + Segmentation",     status: "pending", pct: 0, detail: "", started_at: null, completed_at: null, error_code: null },
+    { id: "metadata",      label: "Metadata Intelligence",       status: "pending", pct: 0, detail: "", started_at: null, completed_at: null, error_code: null },
+    { id: "entities",      label: "Entity + Relationship",       status: "pending", pct: 0, detail: "", started_at: null, completed_at: null, error_code: null },
+    { id: "semantic",      label: "Semantic Learning",           status: "pending", pct: 0, detail: "", started_at: null, completed_at: null, error_code: null },
+    { id: "eda",           label: "EDA Intelligence",            status: "pending", pct: 0, detail: "", started_at: null, completed_at: null, error_code: null },
+    { id: "validation",    label: "ML Validation & Accuracy",   status: "pending", pct: 0, detail: "", started_at: null, completed_at: null, error_code: null },
+    { id: "ontology",      label: "Ontology & Governance",       status: "pending", pct: 0, detail: "", started_at: null, completed_at: null, error_code: null },
+    { id: "canonical",     label: "Canonicalization",            status: "pending", pct: 0, detail: "", started_at: null, completed_at: null, error_code: null },
+    { id: "graph_build",   label: "KG Construction",            status: "pending", pct: 0, detail: "", started_at: null, completed_at: null, error_code: null },
+    { id: "graph_consist", label: "Graph Consistency",           status: "pending", pct: 0, detail: "", started_at: null, completed_at: null, error_code: null },
+    { id: "wiki",          label: "Wiki + Explainability",      status: "pending", pct: 0, detail: "", started_at: null, completed_at: null, error_code: null },
+  ];
+}
+
+function mapLayersToCanvasNodes(layers: PipelineLayer[]): PipelineNode[] {
+  const findStatus = (ids: string[]): NodeStatus => {
+    const statuses = ids.map(id => layers.find(l => l.id === id)?.status ?? "pending");
+    if (statuses.some(s => s === "error")) return "error";
+    if (statuses.some(s => s === "running")) return "running";
+    if (statuses.every(s => s === "done")) return "done";
+    return "pending";
+  };
+
+  return [
+    { id: "import",  label: "Import Data",     icon: "📥", status: findStatus(["upload", "extract"]) },
+    { id: "clean",   label: "Clean & Organize", icon: "🧹", status: findStatus(["clean", "chunk", "metadata"]) },
+    { id: "quality", label: "Readiness Check",  icon: "📊", status: findStatus(["entities", "semantic", "eda", "validation"]) },
+    { id: "graph",   label: "Knowledge Graph",  icon: "🕸️",  status: findStatus(["ontology", "canonical", "graph_build", "graph_consist"]) },
+    { id: "build-ai",label: "Build Custom AI",  icon: "🧠", status: findStatus(["wiki"]) },
+  ];
+}
+
 function ProcessingPage() {
   const [query, setQuery] = useState<string>("");
   const router = useRouter();
   const searchParams = useSearchParams();
+
+  // Canvas nodes (compact 5-node summary)
   const [nodes, setNodes] = useState<PipelineNode[]>(INITIAL_NODES);
+
+  // 14-layer granular state
+  const [layers, setLayers] = useState<PipelineLayer[]>(makeEmptyLayers());
+  const [activeLayerId, setActiveLayerId] = useState<string | null>(null);
+  const [activeTab, setActiveTab] = useState<string>("pipeline");
+  const [kpis, setKpis] = useState({ entities: 0, relationships: 0, graph_nodes: 0, trust_score: 0, ontology_consistency: 0 });
+
   const [overallPct, setOverallPct] = useState(0);
   const [etaSeconds, setEtaSeconds] = useState<number | null>(null);
   const [phase, setPhase] = useState<"ingest" | "orchestrator" | "done">("ingest");
   const [epochs, setEpochs] = useState<EpochEntry[]>([]);
   const [log, setLog] = useState<string[]>([]);
   const [stats, setStats] = useState({ files: 0, entities: 0, communities: 0, dupCount: 0, keptCount: 0 });
-  const [qualityDist, setQualityDist] = useState({ high: 0, medium: 0, low: 0 });
   const [topEntities, setTopEntities] = useState<string[]>([]);
   const [availableModels, setAvailableModels] = useState<{name:string;provider:string;is_available_locally:boolean}[]>([]);
 
@@ -54,7 +127,6 @@ function ProcessingPage() {
   const [gateStep, setGateStep] = useState<GateStep | null>(null);
   const [gateStats, setGateStats] = useState<Record<string, unknown>>({});
   const gateResolveRef = useRef<(() => void) | null>(null);
-  // Track which gates have already been shown (prevents re-triggering on reconnect)
   const gatesShownRef = useRef<Set<string>>(new Set());
 
   // SLM Studio state
@@ -69,13 +141,13 @@ function ProcessingPage() {
 
   // Build AI phase state
   const [slmBuildStatus, setSlmBuildStatus] = useState<"idle"|"exists"|"queued"|"building"|"done"|"failed">("idle");
-  const [slmBuildModelId, setSlmBuildModelId] = useState<string | null>(null);
   const [slmStudioMode, setSlmStudioMode] = useState<"build"|"reconfigure"|"orchestrator">("build");
   const [slmExistsRecord, setSlmExistsRecord] = useState<{ model_id: string; domain_label: string; model_path?: string; val_loss?: number; ollama_model_name?: string } | null>(null);
   const [showModelSelector, setShowModelSelector] = useState(false);
   const slmPollRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   const esRef = useRef<EventSource | null>(null);
+  const jobIdRef = useRef<string>("");
 
   const addLog = (msg: string) => setLog(prev => [...prev.slice(-80), msg]);
 
@@ -83,13 +155,60 @@ function ProcessingPage() {
     setNodes(prev => prev.map(n => n.id === id ? { ...n, status, metric } : n));
   };
 
-  const showGate = (step: GateStep, stats: Record<string, unknown>): Promise<void> => {
+  const showGate = (step: GateStep, gateStatsData: Record<string, unknown>): Promise<void> => {
     return new Promise((resolve) => {
       setGateStep(step);
-      setGateStats(stats);
+      setGateStats(gateStatsData);
       gateResolveRef.current = resolve;
     });
   };
+
+  const fetchKpis = useCallback(async (jobId: string) => {
+    const API = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8000";
+    try {
+      const res = await fetch(`${API}/api/v1/pipeline/${jobId}/kpis`);
+      if (res.ok) {
+        const data = await res.json();
+        setKpis(data.kpis ?? kpis);
+      }
+    } catch { /* non-critical */ }
+  }, []);
+
+  // Map backend step data into PipelineLayer format
+  const mapBackendSteps = useCallback((backendSteps: Record<string, unknown>[]): PipelineLayer[] => {
+    return backendSteps.map(s => ({
+      id: s.id as string,
+      label: s.label as string,
+      status: (s.status as PipelineLayer["status"]) ?? "pending",
+      pct: (s.pct as number) ?? 0,
+      detail: (s.detail as string) ?? "",
+      started_at: (s.started_at as number | null) ?? null,
+      completed_at: (s.completed_at as number | null) ?? null,
+      error_code: (s.error_code as string | null) ?? null,
+    }));
+  }, []);
+
+  // Extract KPI values from the layer detail JSON
+  const extractKpisFromLayers = useCallback((pipelineLayers: PipelineLayer[]) => {
+    const newKpis = { entities: 0, relationships: 0, graph_nodes: 0, trust_score: 0, ontology_consistency: 0 };
+    for (const layer of pipelineLayers) {
+      if (layer.status !== "done" || !layer.detail) continue;
+      try {
+        const d = JSON.parse(layer.detail);
+        if (layer.id === "entities") {
+          newKpis.entities = d.entity_count ?? 0;
+          newKpis.relationships = d.relationship_count ?? 0;
+        } else if (layer.id === "graph_build") {
+          newKpis.graph_nodes = d.graph_nodes ?? 0;
+        } else if (layer.id === "validation") {
+          newKpis.trust_score = d.avg_trust_score ?? 0;
+        } else if (layer.id === "ontology") {
+          newKpis.ontology_consistency = d.ontology_violations ?? 0;
+        }
+      } catch { /* skip */ }
+    }
+    setKpis(newKpis);
+  }, []);
 
   // Fetch available models on mount
   useEffect(() => {
@@ -119,20 +238,23 @@ function ProcessingPage() {
     const sessionQuery = sessionStorage.getItem("query");
     setQuery(sessionQuery ?? "");
     const jobId = sessionStorage.getItem("job_id");
-    const query = sessionStorage.getItem("query");
     const domainLabel = sessionStorage.getItem("domain_label") ?? "general";
     const reuseCorpus = sessionStorage.getItem("reuse_corpus") === "true";
     if (!jobId) { router.push("/"); return; }
 
+    jobIdRef.current = jobId;
     const API = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8000";
 
     if (reuseCorpus) {
-      if (!query) { router.push("/query"); return; }
+      const q = sessionStorage.getItem("query");
+      if (!q) { router.push("/query"); return; }
       setNodes(RESULT_NODES.map(n => n.id === "ai" ? { ...n, status: "running" as NodeStatus } : n));
+      setLayers(makeEmptyLayers().map(l => ({ ...l, status: "done", pct: 100 })));
       setOverallPct(100);
       setPhase("orchestrator");
       addLog("Reusing existing knowledge base — starting AI model selection…");
-      startOrchestrator(API, query, domainLabel);
+      fetchKpis(jobId);
+      startOrchestrator(API, q, domainLabel);
       return;
     }
 
@@ -153,38 +275,66 @@ function ProcessingPage() {
       const status = ev.status;
       addLog(`[${status}] ${ev.overall_pct ?? 0}%`);
 
-      // Drive pipeline node animation from current_step (0-8):
-      // 0=extract, 1=chunk, 2=entities, 3=eda, 4=canonical, 5=resolve, 6=crosslink, 7=graph_wiki, 8=embed
-      const currentStep = ev.current_step ?? 0;
-      if (status === "ingesting") {
-        if (currentStep === 0) {
-          setNodeStatus("import", "running", `${ev.file_count ?? 0} docs`);
-        } else if (currentStep === 1) {
-          if (!gatesShownRef.current.has("import")) {
-            gatesShownRef.current.add("import");
+      // Consume granular ev.steps[] array from SSE
+      if (ev.pipeline_steps?.steps && ev.pipeline_steps.steps.length > 0) {
+        const mappedLayers = mapBackendSteps(ev.pipeline_steps.steps);
+        setLayers(mappedLayers);
+        setNodes(mapLayersToCanvasNodes(mappedLayers));
+        extractKpisFromLayers(mappedLayers);
+      } else {
+        // Fallback: drive canvas from current_step (backwards compat)
+        const currentStep = ev.current_step ?? 0;
+        if (status === "ingesting") {
+          if (currentStep === 0) {
+            setNodeStatus("import", "running", `${ev.file_count ?? 0} docs`);
+          } else if (currentStep === 1) {
+            if (!gatesShownRef.current.has("import")) {
+              gatesShownRef.current.add("import");
+              setNodeStatus("import", "done", `${ev.file_count ?? 0} docs`);
+              fireAchievement("📥", "Data imported!", `${ev.file_count ?? 0} documents loaded`);
+            }
+            setNodeStatus("clean", "running");
+          } else if (currentStep === 2 || currentStep === 3) {
             setNodeStatus("import", "done", `${ev.file_count ?? 0} docs`);
-            fireAchievement("📥", "Data imported!", `${ev.file_count ?? 0} documents loaded`);
+            if (!gatesShownRef.current.has("clean")) {
+              gatesShownRef.current.add("clean");
+              fireAchievement("🧹", "Cleaning complete!", "Chunks extracted and deduplicated");
+            }
+            setNodeStatus("clean", "done");
+            setNodeStatus("quality", "running");
+          } else if (currentStep >= 4) {
+            setNodeStatus("import", "done", `${ev.file_count ?? 0} docs`);
+            setNodeStatus("clean", "done");
+            if (!gatesShownRef.current.has("quality")) {
+              gatesShownRef.current.add("quality");
+              fireAchievement("📊", "Readiness check done!", "Documents scored and filtered");
+            }
+            setNodeStatus("quality", "done");
+            setNodeStatus("graph", "running");
           }
-          setNodeStatus("clean", "running");
-        } else if (currentStep === 2 || currentStep === 3) {
-          setNodeStatus("import", "done", `${ev.file_count ?? 0} docs`);
-          if (!gatesShownRef.current.has("clean")) {
-            gatesShownRef.current.add("clean");
-            fireAchievement("🧹", "Cleaning complete!", "Chunks extracted and deduplicated");
-          }
-          setNodeStatus("clean", "done");
-          setNodeStatus("quality", "running");
-        } else if (currentStep >= 4) {
-          setNodeStatus("import", "done", `${ev.file_count ?? 0} docs`);
-          setNodeStatus("clean", "done");
-          if (!gatesShownRef.current.has("quality")) {
-            gatesShownRef.current.add("quality");
-            fireAchievement("📊", "Readiness check done!", "Documents scored and filtered");
-          }
-          setNodeStatus("quality", "done");
-          setNodeStatus("graph", "running");
         }
       }
+
+      // Achievements tied to specific layers completing
+      if (ev.pipeline_steps?.steps) {
+        const stepsData = ev.pipeline_steps.steps as Record<string, unknown>[];
+        const uploadDone = stepsData.find((s: Record<string, unknown>) => s.id === "upload" && s.status === "done");
+        if (uploadDone && !gatesShownRef.current.has("upload_ach")) {
+          gatesShownRef.current.add("upload_ach");
+          fireAchievement("📥", "Data imported!", `Files uploaded and tracked`);
+        }
+        const entitiesDone = stepsData.find((s: Record<string, unknown>) => s.id === "entities" && s.status === "done");
+        if (entitiesDone && !gatesShownRef.current.has("entities_ach")) {
+          gatesShownRef.current.add("entities_ach");
+          fireAchievement("🔍", "Entities extracted!", "NLP pipeline complete");
+        }
+        const graphDone = stepsData.find((s: Record<string, unknown>) => s.id === "graph_build" && s.status === "done");
+        if (graphDone && !gatesShownRef.current.has("graph_ach")) {
+          gatesShownRef.current.add("graph_ach");
+          fireAchievement("🕸️", "Knowledge graph built!", "Graph construction complete");
+        }
+      }
+
       // "graph_done" — pipeline complete
       if (status === "graph_done") {
         const entities: string[] = ev.top_entities ?? [];
@@ -192,6 +342,9 @@ function ProcessingPage() {
         setStats(p => ({ ...p, entities: ev.entity_count ?? p.entities, communities: ev.community_count ?? p.communities }));
         setNodeStatus("graph", "waiting-approval");
         fireAchievement("🕸️", "Knowledge graph built!", `${ev.entity_count ?? 0} entities discovered!`);
+
+        fetchKpis(jobId);
+
         await showGate("graph", { entityCount: ev.entity_count ?? 0, topEntities: entities });
         setNodeStatus("graph", "done", `${ev.entity_count ?? 0} entities`);
 
@@ -203,7 +356,6 @@ function ProcessingPage() {
           const forCorpusRes = await fetch(`${API}/api/v1/slm/for-corpus?job_id=${jobId}`);
           const forCorpus = await forCorpusRes.json();
 
-          // Always show the model selector — richer card if model exists, build card if not
           setSlmExistsRecord(forCorpus.exists ? forCorpus : null);
           setNodeStatus("build-ai", "waiting-approval");
           setShowModelSelector(true);
@@ -211,7 +363,6 @@ function ProcessingPage() {
             ? `ℹ️ Custom AI found: ${forCorpus.model_id}`
             : "No Custom AI yet — configure your AI in the builder…");
         } catch {
-          // Fallback: show build card
           setSlmExistsRecord(null);
           setNodeStatus("build-ai", "waiting-approval");
           setShowModelSelector(true);
@@ -237,7 +388,6 @@ function ProcessingPage() {
         if (data.status === "done") {
           clearInterval(slmPollRef.current!); slmPollRef.current = null;
           setSlmBuildStatus("done");
-          setSlmBuildModelId(data.model_id ?? null);
           setNodeStatus("build-ai", "done", "AI ready");
           addLog(`✓ Custom AI built: ${data.model_id}`);
           fireAchievement("🧠", "Custom AI ready!", "Your domain AI is built and ready");
@@ -281,22 +431,23 @@ function ProcessingPage() {
       const label = quickRebuild ? "Quick rebuild" : "SLM build";
       addLog(`🧠 ${label} queued — task ${data.task_id ?? "(bg)"}`);
       startSlmBuildPolling(API, domainLabel, data.task_id ?? null, true);
-    } catch (e: any) {
-      addLog(`⚠ SLM build failed: ${e.message}`);
+    } catch (e: unknown) {
+      const msg = e instanceof Error ? e.message : "Unknown error";
+      addLog(`⚠ SLM build failed: ${msg}`);
       setSlmBuildStatus("failed");
       setNodeStatus("build-ai", "done", "failed");
       router.push("/query");
     }
   };
 
-  const startOrchestrator = async (API: string, query: string, domainLabel: string) => {
+  const startOrchestrator = async (API: string, orchestratorQuery: string, domainLabel: string) => {
     const systemPrompt = sessionStorage.getItem("system_prompt") ?? "";
     const modelOverrides = (() => {
       try { return JSON.parse(sessionStorage.getItem("orch_model_overrides") ?? "null"); } catch { return null; }
     })();
     try {
       const body: Record<string, unknown> = {
-        query,
+        query: orchestratorQuery,
         domain_label: domainLabel,
         job_id: sessionStorage.getItem("job_id"),
         system_prompt: systemPrompt,
@@ -324,29 +475,27 @@ function ProcessingPage() {
           }
         }
       }
-    } catch (e: any) {
-      addLog(`⚠ Orchestrator error: ${e.message}`);
+    } catch (e: unknown) {
+      const msg = e instanceof Error ? e.message : "Unknown error";
+      addLog(`⚠ Orchestrator error: ${msg}`);
     }
   };
 
-  const handleOrchestratorEvent = async (event: any) => {
+  const handleOrchestratorEvent = async (event: Record<string, unknown>) => {
     addLog(`[${event.type ?? event.phase}] ${JSON.stringify(event).slice(0, 120)}`);
-
-    // SLM build was already configured during ingestion — no re-prompt during orchestrator run
 
     if (event.phase === "slm_build") {
       if (event.type === "step" && event.step === 3 && event.val_loss !== undefined) {
-        setEpochs(prev => [...prev, { epoch: prev.length + 1, loss: event.val_loss }]);
+        setEpochs(prev => [...prev, { epoch: prev.length + 1, loss: event.val_loss as number }]);
       }
       if (event.type === "done") {
-        setBuildModelId(event.model_id);
-        setSlmRecord({ val_loss: event.val_loss, hallucination_rate: event.hallucination_rate });
+        setBuildModelId(event.model_id as string);
+        setSlmRecord({ val_loss: event.val_loss as number, hallucination_rate: event.hallucination_rate as number });
         setShowApproveModal(true);
         fireAchievement("🧠", "Your Custom AI is ready!", `Model ${event.model_id ?? ""} trained and awaiting deployment`);
       }
     }
 
-    // Map orchestrator phases to canvas nodes
     if (event.type === "step" || event.type === "progress") {
       if (event.step === 4 || event.phase === "recommend") {
         setNodeStatus("ai", "running", "scoring models…");
@@ -364,15 +513,13 @@ function ProcessingPage() {
       setOverallPct(100);
       fireAchievement("✨", "Answer ready!", "Your AI has generated a response — tap Results to view");
 
-      // Model auto-selected by the scoring weights — no approval gate needed
-      const outputData = event.data;
-
+      const outputData = event.data as Record<string, unknown>;
       sessionStorage.setItem("orchestrator_output", JSON.stringify(outputData));
-      const jobId = sessionStorage.getItem("job_id") ?? "";
-      const query = sessionStorage.getItem("query") ?? "";
-      const domainLabel = sessionStorage.getItem("domain_label") ?? "general";
+      const currentJobId = sessionStorage.getItem("job_id") ?? "";
+      const currentQuery = sessionStorage.getItem("query") ?? "";
+      const currentDomain = sessionStorage.getItem("domain_label") ?? "general";
       const sessionRecord = {
-        job_id: jobId, query, domain_label: domainLabel,
+        job_id: currentJobId, query: currentQuery, domain_label: currentDomain,
         timestamp: new Date().toISOString(),
         slm_model_id: outputData.slm_model_id ?? null,
         final_answer: outputData.final_answer ?? "",
@@ -383,11 +530,10 @@ function ProcessingPage() {
       };
       try {
         const existing = JSON.parse(localStorage.getItem("orch_sessions") ?? "[]");
-        const filtered = existing.filter((s: any) => s.job_id !== jobId);
+        const filtered = existing.filter((s: Record<string, unknown>) => s.job_id !== currentJobId);
         localStorage.setItem("orch_sessions", JSON.stringify([sessionRecord, ...filtered].slice(0, 20)));
       } catch { /**/ }
 
-      // Navigate to /planning (intent wizard) instead of /recommendations
       router.push("/planning");
     }
   };
@@ -409,13 +555,20 @@ function ProcessingPage() {
     }
   };
 
+  // Filter layers based on active tab
+  const filteredLayers = activeTab === "pipeline" || activeTab === "overview"
+    ? layers
+    : layers.filter(l => (TAB_LAYER_MAP[activeTab] ?? []).includes(l.id));
+
+  const activeLayer = activeLayerId ? layers.find(l => l.id === activeLayerId) ?? null : null;
+
   return (
     <div>
-      {/* Components */}
+      {/* Modals */}
       {gateStep && (
         <ApprovalGate
           step={gateStep}
-          stats={gateStats as any}
+          stats={gateStats as Record<string, unknown>}
           onProceed={(cfg) => {
             if (cfg) {
               try {
@@ -438,8 +591,6 @@ function ProcessingPage() {
       {showModelSelector && (
         <div className="fixed inset-0 bg-black/60 z-50 flex items-center justify-center p-6">
           <div className="bg-card border border-dborder rounded-2xl overflow-hidden max-w-md w-full shadow-2xl">
-
-            {/* Header */}
             <div className="px-6 pt-6 pb-4 border-b border-dborder">
               <div className="text-[10px] font-bold uppercase tracking-widest text-t3 mb-0.5">Step 2 · Build AI</div>
               <div className="text-[16px] font-semibold text-t1 font-sora">
@@ -451,10 +602,8 @@ function ProcessingPage() {
                   : "Train a small AI model on your corpus using knowledge distillation — no cloud required."}
               </div>
             </div>
-
             <div className="px-6 py-5">
               {slmExistsRecord ? (
-                /* ── Existing model card ── */
                 <div className="bg-bg3 border border-dborder rounded-xl p-4 mb-4">
                   <div className="flex items-center gap-3 mb-3">
                     <div className="w-9 h-9 rounded-lg bg-accent/10 border border-accent/25 flex items-center justify-center text-lg flex-shrink-0">🧠</div>
@@ -478,7 +627,6 @@ function ProcessingPage() {
                   )}
                 </div>
               ) : (
-                /* ── No model yet — build prompt ── */
                 <div className="bg-accent/5 border border-accent/20 rounded-xl p-4 mb-4">
                   <div className="flex gap-3">
                     <span className="text-2xl flex-shrink-0">🧠</span>
@@ -497,7 +645,6 @@ function ProcessingPage() {
                 </div>
               )}
 
-              {/* Buttons */}
               <div className="space-y-2">
                 {slmExistsRecord ? (
                   <>
@@ -598,53 +745,82 @@ function ProcessingPage() {
 
       <div className="w-full px-8">
 
-        {/* Pipeline canvas */}
+        {/* Compact pipeline canvas (5-node summary) */}
         <div className="bg-white border border-dborder rounded-2xl mb-6 overflow-hidden">
           <PipelineCanvas
             nodes={nodes}
             onNodeClick={(node) => {
-              // Allow clicking waiting-approval nodes to re-open gate
               addLog(`Clicked node: ${node.id}`);
             }}
           />
         </div>
 
-        {/* Overall progress bar */}
-        <div className="mb-6">
-          <div className="flex justify-between text-[11px] text-t3 mb-1.5">
-            <span>Overall progress</span>
-            <span className="text-t2 font-semibold">{overallPct}%</span>
-          </div>
-          <div className="prog-bar h-2">
-            <div className="prog-fill h-2" style={{ width: `${overallPct}%` }} />
-          </div>
+        {/* Tab navigation */}
+        <div className="flex items-center gap-0.5 mb-5 overflow-x-auto border-b border-dborder pb-px">
+          {PIPELINE_TABS.map(tab => (
+            <button
+              key={tab.id}
+              onClick={() => {
+                setActiveTab(tab.id);
+                setActiveLayerId(null);
+
+                // Auto-open detail for single-layer tabs
+                const tabLayers = TAB_LAYER_MAP[tab.id] ?? [];
+                if (tabLayers.length === 1) {
+                  const targetLayer = layers.find(l => l.id === tabLayers[0]);
+                  if (targetLayer && targetLayer.status !== "pending") {
+                    setActiveLayerId(targetLayer.id);
+                  }
+                }
+              }}
+              className={`
+                px-3 py-2 text-[11px] font-medium whitespace-nowrap transition-all duration-150 border-b-2 -mb-px
+                ${activeTab === tab.id
+                  ? "border-accent text-accent"
+                  : "border-transparent text-t3 hover:text-t2 hover:border-dborder"
+                }
+              `}
+            >
+              {tab.label}
+            </button>
+          ))}
         </div>
 
-        {/* Stats row */}
-        {(stats.files > 0 || stats.entities > 0) && (
-          <div className="grid grid-cols-3 gap-3 mb-6">
-            {[
-              { label: "Documents",    value: stats.files,       color: "#60a5fa" },
-              { label: "Entities",     value: stats.entities,    color: "#7c6af8" },
-              { label: "Communities",  value: stats.communities,  color: "#2dd4a0" },
-            ].map(({ label, value, color }) => (
-              <div key={label} className="mcard text-center">
-                <div className="absolute top-0 left-0 right-0 h-0.5 rounded-t" style={{ background: color }} />
-                <div className="font-sora text-[22px] font-bold text-t1 leading-none">{value}</div>
-                <div className="text-[10px] text-t3 mt-1 uppercase tracking-wider">{label}</div>
-              </div>
-            ))}
+        {/* Main content: layer list + detail panel */}
+        <div className={`flex gap-6 ${activeLayer ? "flex-col lg:flex-row" : ""}`}>
+          {/* Left: Layer list */}
+          <div className={activeLayer ? "w-full lg:w-1/2" : "w-full"}>
+            <PipelineLayerList
+              layers={filteredLayers}
+              kpis={kpis}
+              activeLayerId={activeLayerId}
+              jobId={jobIdRef.current}
+              onLayerClick={(layer) => {
+                setActiveLayerId(activeLayerId === layer.id ? null : layer.id);
+              }}
+            />
           </div>
-        )}
+
+          {/* Right: Detail panel */}
+          {activeLayer && (
+            <div className="w-full lg:w-1/2">
+              <LayerDetailPanel
+                layer={activeLayer}
+                jobId={jobIdRef.current}
+                onClose={() => setActiveLayerId(null)}
+              />
+            </div>
+          )}
+        </div>
 
         {/* Build AI progress */}
         {(slmBuildStatus === "queued" || slmBuildStatus === "building") && (
-          <div className="card mb-6 flex items-center justify-between gap-4">
+          <div className="card mb-6 mt-6 flex items-center justify-between gap-4">
             <div className="flex items-center gap-3">
               <div className="w-2 h-2 rounded-full bg-purple-400 animate-pulse flex-shrink-0" />
               <div>
                 <div className="text-[12px] font-semibold text-t1">Building your Custom AI…</div>
-                <div className="text-[10px] text-t3 mt-0.5">Training may take 10–60 min. You'll be taken to the Query Builder when done.</div>
+                <div className="text-[10px] text-t3 mt-0.5">Training may take 10–60 min. You&apos;ll be taken to the Query Builder when done.</div>
               </div>
             </div>
             <button
@@ -654,13 +830,13 @@ function ProcessingPage() {
           </div>
         )}
         {slmBuildStatus === "done" && (
-          <div className="card mb-6 flex items-center gap-2">
+          <div className="card mb-6 mt-6 flex items-center gap-2">
             <span>🧠</span>
             <div className="text-[12px] text-t1">Custom AI ready — redirecting to Query Builder…</div>
           </div>
         )}
         {slmBuildStatus === "failed" && (
-          <div className="card mb-6 flex items-center gap-2">
+          <div className="card mb-6 mt-6 flex items-center gap-2">
             <span>⚠️</span>
             <div className="text-[12px] text-t2">AI build failed — you can still use the Query Builder with a general model.</div>
           </div>

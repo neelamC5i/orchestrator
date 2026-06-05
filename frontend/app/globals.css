@@ -162,7 +162,11 @@ body {
 @keyframes flowPulse { 0%{transform:translateX(-100%)} 100%{transform:translateX(100%)} }
 @keyframes slideInRight { from{transform:translateX(120%);opacity:0} to{transform:translateX(0);opacity:1} }
 @keyframes fadeIn { from{opacity:0;transform:translateY(8px)} to{opacity:1;transform:translateY(0)} }
+@keyframes layerRowEnter { from{opacity:0;transform:translateX(-12px)} to{opacity:1;transform:translateX(0)} }
+@keyframes detailSlide { from{opacity:0;transform:translateX(20px)} to{opacity:1;transform:translateX(0)} }
 .animate-blink { animation: blink 1.3s infinite; }
 .animate-slide-in { animation: slideInRight 0.35s ease-out forwards; }
 .animate-fade-in { animation: fadeIn 0.25s ease-out forwards; }
 .flow-pulse-anim { animation: flowPulse 1.5s ease-in-out infinite; }
+.layer-row-enter { animation: layerRowEnter 0.3s ease-out both; }
+.detail-slide { animation: detailSlide 0.25s ease-out both; }
