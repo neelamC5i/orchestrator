@@ -1,6 +1,6 @@
 "use client";
 
-import { CheckCircle2, Loader2, AlertTriangle, Clock, ChevronRight } from "lucide-react";
+import { CheckCircle2, Loader2, AlertTriangle, Clock, ChevronRight, ShieldCheck } from "lucide-react";
 
 export type LayerStatus = "pending" | "running" | "done" | "error";
 
@@ -29,6 +29,8 @@ interface PipelineLayerListProps {
   activeLayerId: string | null;
   jobId: string;
   onLayerClick: (layer: PipelineLayer) => void;
+  reviewPending?: boolean;
+  onConfirmReview?: () => void;
 }
 
 const STATUS_CONFIG: Record<LayerStatus, { icon: typeof CheckCircle2; color: string; bg: string; border: string; label: string }> = {
@@ -73,9 +75,10 @@ function KPICard({ label, value, unit }: { label: string; value: string | number
   );
 }
 
-export default function PipelineLayerList({ layers, kpis, activeLayerId, jobId, onLayerClick }: PipelineLayerListProps) {
+export default function PipelineLayerList({ layers, kpis, activeLayerId, jobId, onLayerClick, reviewPending, onConfirmReview }: PipelineLayerListProps) {
   const completedCount = layers.filter(l => l.status === "done").length;
   const overallPct = Math.round((completedCount / Math.max(1, layers.length)) * 100);
+  const allDone = completedCount === layers.length && layers.length > 0;
 
   return (
     <div className="w-full">
@@ -159,6 +162,32 @@ export default function PipelineLayerList({ layers, kpis, activeLayerId, jobId, 
           );
         })}
       </div>
+
+      {/* Pipeline review confirmation */}
+      {reviewPending && allDone && onConfirmReview && (
+        <div className="mt-5 animate-fade-in">
+          <div className="bg-accent/5 border border-accent/20 rounded-card p-5">
+            <div className="flex items-start gap-3 mb-4">
+              <div className="w-9 h-9 rounded-lg bg-accent/10 border border-accent/25 flex items-center justify-center flex-shrink-0">
+                <ShieldCheck className="w-4.5 h-4.5 text-accent" />
+              </div>
+              <div>
+                <div className="font-sora text-[14px] font-semibold text-t1">Pipeline Complete — Review Required</div>
+                <div className="text-[11px] text-t2 mt-0.5 leading-relaxed">
+                  All {layers.length} layers have finished processing. Click on any layer above to inspect its results in detail.
+                  When you&apos;re satisfied, confirm to proceed to AI model selection.
+                </div>
+              </div>
+            </div>
+            <button
+              onClick={onConfirmReview}
+              className="w-full btn btn-p py-3 text-[13px] font-semibold"
+            >
+              Confirm Pipeline &amp; Continue →
+            </button>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

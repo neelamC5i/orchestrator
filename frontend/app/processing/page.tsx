@@ -146,6 +146,10 @@ function ProcessingPage() {
   const [showModelSelector, setShowModelSelector] = useState(false);
   const slmPollRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
+  // Pipeline review gate — user must review layers before model selector
+  const [pipelineReviewPending, setPipelineReviewPending] = useState(false);
+  const deferredGraphDoneRef = useRef<{ entities: string[]; entityCount: number } | null>(null);
+
   const esRef = useRef<EventSource | null>(null);
   const jobIdRef = useRef<string>("");
 
@@ -335,38 +339,19 @@ function ProcessingPage() {
         }
       }
 
-      // "graph_done" — pipeline complete
+      // "graph_done" — pipeline complete, enter review mode
       if (status === "graph_done") {
         const entities: string[] = ev.top_entities ?? [];
         setTopEntities(entities);
         setStats(p => ({ ...p, entities: ev.entity_count ?? p.entities, communities: ev.community_count ?? p.communities }));
-        setNodeStatus("graph", "waiting-approval");
-        fireAchievement("🕸️", "Knowledge graph built!", `${ev.entity_count ?? 0} entities discovered!`);
+        fireAchievement("🕸️", "Pipeline complete!", `${ev.entity_count ?? 0} entities — review all layers before continuing`);
 
         fetchKpis(jobId);
-
-        await showGate("graph", { entityCount: ev.entity_count ?? 0, topEntities: entities });
-        setNodeStatus("graph", "done", `${ev.entity_count ?? 0} entities`);
-
         es.close();
-        addLog("Knowledge graph complete — checking for existing custom AI…");
-        setNodeStatus("build-ai", "running", "checking…");
 
-        try {
-          const forCorpusRes = await fetch(`${API}/api/v1/slm/for-corpus?job_id=${jobId}`);
-          const forCorpus = await forCorpusRes.json();
-
-          setSlmExistsRecord(forCorpus.exists ? forCorpus : null);
-          setNodeStatus("build-ai", "waiting-approval");
-          setShowModelSelector(true);
-          addLog(forCorpus.exists
-            ? `ℹ️ Custom AI found: ${forCorpus.model_id}`
-            : "No Custom AI yet — configure your AI in the builder…");
-        } catch {
-          setSlmExistsRecord(null);
-          setNodeStatus("build-ai", "waiting-approval");
-          setShowModelSelector(true);
-        }
+        deferredGraphDoneRef.current = { entities, entityCount: ev.entity_count ?? 0 };
+        setPipelineReviewPending(true);
+        addLog("Pipeline complete — review all layers, then confirm to continue.");
       } else if (status === "failed") {
         addLog(`❌ Pipeline failed: ${ev.error ?? ""}`);
         es.close();
@@ -376,6 +361,38 @@ function ProcessingPage() {
     es.onerror = () => { addLog("⚠ SSE connection lost — retrying…"); };
     return () => { es.close(); esRef.current?.close(); };
   }, []);
+
+  const confirmPipelineReview = async () => {
+    setPipelineReviewPending(false);
+    const deferred = deferredGraphDoneRef.current;
+    if (!deferred) return;
+
+    const jobId = jobIdRef.current;
+    const API = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8000";
+
+    setNodeStatus("graph", "waiting-approval");
+    await showGate("graph", { entityCount: deferred.entityCount, topEntities: deferred.entities });
+    setNodeStatus("graph", "done", `${deferred.entityCount} entities`);
+
+    addLog("Knowledge graph confirmed — checking for existing custom AI…");
+    setNodeStatus("build-ai", "running", "checking…");
+
+    try {
+      const forCorpusRes = await fetch(`${API}/api/v1/slm/for-corpus?job_id=${jobId}`);
+      const forCorpus = await forCorpusRes.json();
+
+      setSlmExistsRecord(forCorpus.exists ? forCorpus : null);
+      setNodeStatus("build-ai", "waiting-approval");
+      setShowModelSelector(true);
+      addLog(forCorpus.exists
+        ? `ℹ️ Custom AI found: ${forCorpus.model_id}`
+        : "No Custom AI yet — configure your AI in the builder…");
+    } catch {
+      setSlmExistsRecord(null);
+      setNodeStatus("build-ai", "waiting-approval");
+      setShowModelSelector(true);
+    }
+  };
 
   const startSlmBuildPolling = (API: string, domainLabel: string, taskId: string | null, navigateAfter: boolean) => {
     if (slmPollRef.current) clearInterval(slmPollRef.current);
@@ -798,6 +815,8 @@ function ProcessingPage() {
               onLayerClick={(layer) => {
                 setActiveLayerId(activeLayerId === layer.id ? null : layer.id);
               }}
+              reviewPending={pipelineReviewPending}
+              onConfirmReview={confirmPipelineReview}
             />
           </div>
 
