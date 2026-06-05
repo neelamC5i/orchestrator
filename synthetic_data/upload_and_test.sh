@@ -39,7 +39,7 @@ fi
 # Check backend is running
 if ! curl -sf "${API}/data/corpora" -o /dev/null 2>/dev/null; then
   fail "Backend not reachable at ${API}"
-  info "Start with: cd /home/kumar1/orchestrator/backend && uvicorn app.main:app --reload --port 8000"
+  info "Start with: cd /home/neelam/orchestrator/backend && uvicorn app.main:app --reload --port 8000"
   exit 1
 fi
 ok "Backend reachable at ${API}"

@@ -1,0 +1,55 @@
+nohup: ignoring input
+
+> orchestrator-frontend@0.1.0 dev
+> next dev -p 3001
+
+  ▲ Next.js 15.0.0
+  - Local:        http://localhost:3001
+
+ ✓ Starting...
+ ✓ Ready in 1375ms
+ ✓ Compiled /middleware in 140ms (91 modules)
+ ○ Compiling /login ...
+ ✓ Compiled /login in 1591ms (584 modules)
+ GET /login 200 in 1762ms
+ ✓ Compiled in 218ms (291 modules)
+ ✓ Compiled /_not-found in 168ms (573 modules)
+ GET /r 404 in 219ms
+ ✓ Compiled / in 101ms (579 modules)
+ GET / 200 in 153ms
+ GET /login 200 in 10ms
+ ✓ Compiled /dashboard in 214ms (587 modules)
+ GET /dashboard 200 in 233ms
+ ✓ Compiled /query in 277ms (599 modules)
+ GET /query 200 in 303ms
+ GET / 200 in 9ms
+ ✓ Compiled /processing in 180ms (611 modules)
+ GET /processing 200 in 200ms
+ GET /query 200 in 12ms
+ GET /processing 200 in 6ms
+ ✓ Compiled /planning in 383ms (614 modules)
+ GET /planning 200 in 401ms
+ ○ Compiling /recommendations ...
+ ✓ Compiled /recommendations in 1408ms (957 modules)
+ GET /planning 200 in 1084ms
+ GET /recommendations 200 in 1458ms
+ GET /recommendations 200 in 7ms
+ ✓ Compiled /wiki in 333ms (959 modules)
+ GET /wiki 200 in 369ms
+ GET /wiki 200 in 6ms
+ GET /recommendations 200 in 12ms
+ ✓ Compiled / in 94ms (495 modules)
+ GET / 200 in 129ms
+ GET /processing 200 in 11ms
+ GET /wiki 200 in 10ms
+ ○ Compiling /quality ...
+ ✓ Compiled /quality in 591ms (961 modules)
+ GET /quality 200 in 645ms
+ GET /wiki 200 in 16ms
+ GET /recommendations 200 in 17ms
+ GET /wiki 200 in 7ms
+ GET /quality 200 in 7ms
+ ✓ Compiled /login in 237ms (492 modules)
+ GET /login 200 in 285ms
+ GET /login 200 in 8ms
+ GET /login 200 in 9ms
