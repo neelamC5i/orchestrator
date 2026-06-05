@@ -1,10 +1,10 @@
  
  -------------- orchestrator_neelam@BTGBSAPP08 v5.6.3 (recovery)
 --- ***** ----- 
--- ******* ---- Linux-6.8.0-107-generic-x86_64-with-glibc2.39 2026-06-04 16:33:23
+-- ******* ---- Linux-6.8.0-107-generic-x86_64-with-glibc2.39 2026-06-05 12:00:52
 - *** --- * --- 
 - ** ---------- [config]
-- ** ---------- .> app:         orchestrator:0x70da68667350
+- ** ---------- .> app:         orchestrator:0x7ea9b150d190
 - ** ---------- .> transport:   redis://localhost:6379//
 - ** ---------- .> results:     redis://localhost:6379/
 - *** --- * --- .> concurrency: 2 (prefork)
@@ -20,29 +20,30 @@
   . run_ingest_pipeline
   . run_slm_build
 
-[2026-06-04 16:33:23,596: INFO/MainProcess] Connected to redis://localhost:6379//
-[2026-06-04 16:33:23,598: INFO/MainProcess] mingle: searching for neighbors
-[2026-06-04 16:33:24,606: WARNING/MainProcess] /home/neelam/orchestrator/backend/venv/lib/python3.12/site-packages/celery/app/control.py:56: DuplicateNodenameWarning: Received multiple replies from node name: celery@BTGBSAPP08.
+[2026-06-05 12:00:52,079: INFO/MainProcess] Connected to redis://localhost:6379//
+[2026-06-05 12:00:52,081: INFO/MainProcess] mingle: searching for neighbors
+[2026-06-05 12:00:53,089: WARNING/MainProcess] /home/neelam/orchestrator/backend/venv/lib/python3.12/site-packages/celery/app/control.py:56: DuplicateNodenameWarning: Received multiple replies from node name: celery@BTGBSAPP08.
 Please make sure you give each node a unique nodename using
 the celery worker `-n` option.
   warnings.warn(DuplicateNodenameWarning(
 
-[2026-06-04 16:33:24,606: INFO/MainProcess] mingle: sync with 2 nodes
-[2026-06-04 16:33:24,606: INFO/MainProcess] mingle: sync complete
-[2026-06-04 16:33:24,615: INFO/MainProcess] orchestrator_neelam@BTGBSAPP08 ready.
-[2026-06-04 16:37:36,939: INFO/MainProcess] Task run_ingest_pipeline[f35ebfac-a54c-433f-a152-3411a6efa1b6] received
-[2026-06-04 16:37:38,520: WARNING/ForkPoolWorker-2] spaCy unavailable ([E050] Can't find model 'en_core_web_sm'. It doesn't seem to be a Python package or a valid path to a data directory.) — using regex entity fallback
-[2026-06-04 16:37:38,527: INFO/ForkPoolWorker-2] Loading faiss with AVX2 support.
-[2026-06-04 16:37:38,527: INFO/ForkPoolWorker-2] Could not load library with AVX2 support due to:
+[2026-06-05 12:00:53,089: INFO/MainProcess] mingle: sync with 2 nodes
+[2026-06-05 12:00:53,089: INFO/MainProcess] mingle: sync complete
+[2026-06-05 12:00:53,098: INFO/MainProcess] orchestrator_neelam@BTGBSAPP08 ready.
+[2026-06-05 12:02:22,427: INFO/MainProcess] Task run_ingest_pipeline[fb165dbe-4a3f-4a1c-a0a6-0274623e9e70] received
+[2026-06-05 12:02:23,968: WARNING/ForkPoolWorker-2] spaCy unavailable ([E050] Can't find model 'en_core_web_sm'. It doesn't seem to be a Python package or a valid path to a data directory.) — using regex entity fallback
+[2026-06-05 12:02:23,974: INFO/ForkPoolWorker-2] Loading faiss with AVX2 support.
+[2026-06-05 12:02:23,974: INFO/ForkPoolWorker-2] Could not load library with AVX2 support due to:
 ModuleNotFoundError("No module named 'faiss.swigfaiss_avx2'")
-[2026-06-04 16:37:38,527: INFO/ForkPoolWorker-2] Loading faiss.
-[2026-06-04 16:37:38,543: INFO/ForkPoolWorker-2] Successfully loaded faiss.
-[2026-06-04 16:37:41,555: INFO/ForkPoolWorker-2] No device provided, using cuda:0
-[2026-06-04 16:37:41,660: WARNING/ForkPoolWorker-2] '[SSL: CERTIFICATE_VERIFY_FAILED] certificate verify failed: unable to get local issuer certificate (_ssl.c:1000)' thrown while requesting HEAD https://huggingface.co/sentence-transformers/all-MiniLM-L6-v2/resolve/main/./modules.json
-[2026-06-04 16:37:41,660: WARNING/ForkPoolWorker-2] '[SSL: CERTIFICATE_VERIFY_FAILED] certificate verify failed: unable to get local issuer certificate (_ssl.c:1000)' thrown while requesting HEAD https://huggingface.co/sentence-transformers/all-MiniLM-L6-v2/resolve/main/./modules.json
-[2026-06-04 16:37:41,660: WARNING/ForkPoolWorker-2] Retrying in 1s [Retry 1/5].
-[2026-06-04 16:37:41,660: WARNING/ForkPoolWorker-2] Retrying in 1s [Retry 1/5].
-[2026-06-04 16:37:42,660: WARNING/ForkPoolWorker-2] SentenceTransformer unavailable (Cannot send a request, as the client has been closed.); using fallback embeddings
-[2026-06-04 16:37:44,511: INFO/ForkPoolWorker-2] FaissStore: indexed 19 chunks for sweetners_2 (total 19)
-[2026-06-04 16:37:44,522: INFO/ForkPoolWorker-2] run_ingest_pipeline 52e5eab1-ab76-442b-8af0-1ec25f0de229 done in 7s
-[2026-06-04 16:37:44,525: INFO/ForkPoolWorker-2] Task run_ingest_pipeline[f35ebfac-a54c-433f-a152-3411a6efa1b6] succeeded in 7.586429696530104s: None
+[2026-06-05 12:02:23,974: INFO/ForkPoolWorker-2] Loading faiss.
+[2026-06-05 12:02:23,990: INFO/ForkPoolWorker-2] Successfully loaded faiss.
+[2026-06-05 12:02:27,004: INFO/ForkPoolWorker-2] No device provided, using cuda:0
+[2026-06-05 12:02:27,102: WARNING/ForkPoolWorker-2] '[SSL: CERTIFICATE_VERIFY_FAILED] certificate verify failed: unable to get local issuer certificate (_ssl.c:1000)' thrown while requesting HEAD https://huggingface.co/sentence-transformers/all-MiniLM-L6-v2/resolve/main/./modules.json
+[2026-06-05 12:02:27,102: WARNING/ForkPoolWorker-2] '[SSL: CERTIFICATE_VERIFY_FAILED] certificate verify failed: unable to get local issuer certificate (_ssl.c:1000)' thrown while requesting HEAD https://huggingface.co/sentence-transformers/all-MiniLM-L6-v2/resolve/main/./modules.json
+[2026-06-05 12:02:27,102: WARNING/ForkPoolWorker-2] Retrying in 1s [Retry 1/5].
+[2026-06-05 12:02:27,102: WARNING/ForkPoolWorker-2] Retrying in 1s [Retry 1/5].
+[2026-06-05 12:02:28,103: WARNING/ForkPoolWorker-2] SentenceTransformer unavailable (Cannot send a request, as the client has been closed.); using fallback embeddings
+[2026-06-05 12:02:29,944: WARNING/ForkPoolWorker-2] graphify compatibility export failed: No module named 'tiktoken'
+[2026-06-05 12:02:29,995: INFO/ForkPoolWorker-2] FaissStore: indexed 19 chunks for sweetners_2 (total 19)
+[2026-06-05 12:02:30,006: INFO/ForkPoolWorker-2] run_ingest_pipeline 745f51e6-56c1-4d3c-bd0c-b5b27edae4b8 done in 7s
+[2026-06-05 12:02:30,009: INFO/ForkPoolWorker-2] Task run_ingest_pipeline[fb165dbe-4a3f-4a1c-a0a6-0274623e9e70] succeeded in 7.581239737570286s: None

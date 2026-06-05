@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import type { ObservatoryData, ObservatoryTab } from "./types";
+import type { ObservatoryData, ObservatoryTab, GraphifyData } from "./types";
 import { EmptyState } from "./common";
 import OverviewTab from "./OverviewTab";
 import PipelineTab from "./PipelineTab";
@@ -31,6 +31,7 @@ export default function EDAIntelligenceObservatory({ jobId }: { jobId: string })
   const [activeTab, setActiveTab] = useState<ObservatoryTab>("Pipeline");
   const [data, setData] = useState<ObservatoryData | null>(null);
   const [wikiPages, setWikiPages] = useState<any[]>([]);
+  const [graphData, setGraphData] = useState<GraphifyData | null>(null);
   const [loading, setLoading] = useState(false);
   const [emptyMessage, setEmptyMessage] = useState(
     "No data ingested yet — upload files or connect a database to populate this view."
@@ -64,6 +65,19 @@ export default function EDAIntelligenceObservatory({ jobId }: { jobId: string })
       const ct = (r.headers.get("content-type") || "").toLowerCase();
       if (!ct.includes("application/json")) return null;
       return await r.json();
+    };
+
+    const fetchGraph = async (targetJobId: string): Promise<GraphifyData | null> => {
+      try {
+        const r = await fetch(`${API}/api/v1/data/graph/${targetJobId}`);
+        if (!r.ok) return null;
+        const ct = (r.headers.get("content-type") || "").toLowerCase();
+        if (!ct.includes("application/json")) return null;
+        const payload = await r.json();
+        return Array.isArray(payload?.nodes) ? payload : null;
+      } catch {
+        return null;
+      }
     };
 
     const fetchWiki = async (targetJobId: string): Promise<any[]> => {
@@ -108,7 +122,12 @@ export default function EDAIntelligenceObservatory({ jobId }: { jobId: string })
 
         if (!cancelled) {
           setData(d);
-          setWikiPages(targetJobId ? await fetchWiki(targetJobId) : []);
+          const [wiki, graph] = await Promise.all([
+            targetJobId ? fetchWiki(targetJobId) : Promise.resolve([]),
+            targetJobId ? fetchGraph(targetJobId) : Promise.resolve(null),
+          ]);
+          setWikiPages(wiki);
+          setGraphData(graph);
           if (!targetJobId) {
             setEmptyMessage("No completed ingestion found yet. Upload files or connect a database to start the pipeline.");
           } else if (!d) {
@@ -157,7 +176,7 @@ export default function EDAIntelligenceObservatory({ jobId }: { jobId: string })
     if (activeTab === "Extraction") return <ExtractionTab data={data} />;
     if (activeTab === "Metadata") return <MetadataTab data={data} />;
     if (activeTab === "EDA") return <EDATab data={data} />;
-    if (activeTab === "Knowledge Graph") return <KnowledgeGraphTab data={data} />;
+    if (activeTab === "Knowledge Graph") return <KnowledgeGraphTab data={data} graphData={graphData} />;
     if (activeTab === "Confidence") return <ConfidenceTab data={data} />;
     if (activeTab === "Validation & Trust") return <ValidationTrustTab data={data} />;
     if (activeTab === "Governance & Ontology") return <GovernanceOntologyTab data={data} />;

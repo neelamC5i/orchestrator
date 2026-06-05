@@ -22,6 +22,39 @@ settings = get_settings()
 router = APIRouter(prefix="/data", tags=["data"])
 
 
+def _load_graph_data(corpus_dir: str) -> dict:
+    """Load graph from graphify-out first, then canonical_graph fallback."""
+    graph_file = Path(corpus_dir) / "graphify-out" / "graph.json"
+    if graph_file.exists():
+        return json.loads(graph_file.read_text(encoding="utf-8"))
+
+    canonical_file = Path(corpus_dir) / "canonical_graph.json"
+    if canonical_file.exists():
+        raw = json.loads(canonical_file.read_text(encoding="utf-8"))
+        nodes = []
+        for n in raw.get("nodes", []):
+            nodes.append({
+                "id": n.get("canonical_id") or n.get("id") or n.get("label"),
+                "label": n.get("label") or n.get("canonical_id") or "",
+                "type": n.get("entity_type") or n.get("type") or "ENTITY",
+                "count": max(1, len(n.get("provenance", []))) if isinstance(n.get("provenance", []), list) else 1,
+                "community": n.get("community", 0),
+            })
+        edges = []
+        for e in raw.get("edges", []):
+            if e.get("suppressed"):
+                continue
+            edges.append({
+                "source": e.get("source_canonical_id") or e.get("source"),
+                "target": e.get("target_canonical_id") or e.get("target"),
+                "weight": float(e.get("confidence", 1.0) or 1.0),
+                "relation": e.get("relation", "related_to"),
+            })
+        return {"nodes": nodes, "edges": edges}
+
+    return {"nodes": [], "edges": []}
+
+
 class DBCredentials(BaseModel):
     db_type: str          # postgresql | mysql | sqlite | mongodb
     host: str = ""
@@ -247,8 +280,9 @@ async def get_wiki(job_id: str, q: str = "", db: AsyncSession = Depends(get_db))
                 len(v) for k, v in sections.items() if k != "disruptions"
             )
 
+            m = _re.search(r"\d+", md_file.stem)
             article = {
-                "community_id": int(_re.search(r"\d+", md_file.stem).group()),
+                "community_id": int(m.group()) if m else len(articles),
                 "title": title,
                 "sections": sections,
                 "passages": passages,
@@ -266,6 +300,52 @@ async def get_wiki(job_id: str, q: str = "", db: AsyncSession = Depends(get_db))
                     continue
 
             articles.append(article)
+    # Fallback: derive lightweight articles from wiki_pages JSON when markdown wiki is absent.
+    if not articles and corpus_dir:
+        wiki_pages = Path(corpus_dir) / "wiki_pages"
+        if wiki_pages.exists():
+            for idx, page_file in enumerate(sorted(wiki_pages.glob("*.json"))):
+                if page_file.name == "index.json":
+                    continue
+                try:
+                    page = json.loads(page_file.read_text(encoding="utf-8"))
+                except Exception:
+                    continue
+
+                title = str(page.get("title") or page_file.stem)
+                passages = []
+                summary = str(page.get("summary") or "").strip()
+                if summary:
+                    passages.append(summary)
+                for fact in page.get("key_facts", [])[:5]:
+                    if isinstance(fact, dict):
+                        claim = str(fact.get("claim") or "").strip()
+                        if claim:
+                            passages.append(claim)
+
+                sections = {
+                    "ENTITY": [
+                        str(rel.get("label") or rel.get("canonical_id") or "").strip()
+                        for rel in page.get("related_entities", [])[:20]
+                        if isinstance(rel, dict)
+                    ]
+                }
+                sections["ENTITY"] = [s for s in sections["ENTITY"] if s]
+
+                if q:
+                    ql = q.lower()
+                    blob = f"{title} {' '.join(passages)} {' '.join(sections['ENTITY'])}".lower()
+                    if ql not in blob:
+                        continue
+
+                articles.append({
+                    "community_id": idx,
+                    "title": title,
+                    "sections": sections,
+                    "passages": passages[:6],
+                    "entity_count": len(sections["ENTITY"]),
+                    "status": row.get("status"),
+                })
 
     return {
         "job_id": job_id,
@@ -475,12 +555,11 @@ def _extract_text_from_html(html: str, url: str = "") -> str:
 async def get_graph(job_id: str, db: AsyncSession = Depends(get_db)):
     """Return full knowledge graph (nodes + edges) for a corpus job."""
     corpus_dir = await _resolve_corpus_dir(job_id, db)
-    graph_file = Path(corpus_dir) / "graphify-out" / "graph.json"
-    if not graph_file.exists():
-        raise HTTPException(status_code=404, detail="Graph not yet built for this job")
-    data = json.loads(graph_file.read_text(encoding="utf-8"))
+    data = _load_graph_data(corpus_dir)
     nodes = data.get("nodes", [])
     edges = data.get("edges", [])
+    if not nodes and not edges:
+        raise HTTPException(status_code=404, detail="Graph not yet built for this job")
     return {
         "job_id": job_id,
         "node_count": len(nodes),
@@ -506,20 +585,18 @@ async def get_entities(
     result: list[dict] = []
 
     # ── Graphify nodes ────────────────────────────────────────────────────────
-    graph_file = Path(corpus_dir) / "graphify-out" / "graph.json"
-    if graph_file.exists():
-        data = json.loads(graph_file.read_text(encoding="utf-8"))
-        for node in data.get("nodes", []):
-            if type and node.get("type", "").lower() != type.lower():
-                continue
-            result.append({
-                "text": node.get("id") or node.get("label"),
-                "label": node.get("type", "ENTITY").upper(),
-                "type": node.get("type", "entity"),
-                "count": node.get("count", 1),
-                "community": node.get("community"),
-                "source": "graphify",
-            })
+    data = _load_graph_data(corpus_dir)
+    for node in data.get("nodes", []):
+        if type and node.get("type", "").lower() != type.lower():
+            continue
+        result.append({
+            "text": node.get("id") or node.get("label"),
+            "label": node.get("type", "ENTITY").upper(),
+            "type": node.get("type", "entity"),
+            "count": node.get("count", 1),
+            "community": node.get("community"),
+            "source": "graphify",
+        })
 
     # ── NLP extractor entities ────────────────────────────────────────────────
     nlp_file = Path(corpus_dir) / "nlp_entities.json"
@@ -653,7 +730,7 @@ async def _job_meta(job_id: str, db: AsyncSession) -> tuple[str, str, bool]:
     corpus_dir = await _resolve_corpus_dir(job_id, db)
     graph_exists = bool(row.get("graph_path")) or (
         Path(corpus_dir) / "graphify-out" / "graph.json"
-    ).exists()
+    ).exists() or (Path(corpus_dir) / "canonical_graph.json").exists()
     return corpus_dir, row.get("domain_label", "general"), graph_exists
 
 
@@ -707,6 +784,12 @@ async def get_wiki_stats(job_id: str, db: AsyncSession = Depends(get_db)):
         all_md = list(wiki_dir.glob("*.md"))
         total_articles = len(all_md)
         schema_articles = len([f for f in all_md if f.name.startswith("schema_")])
+
+    if total_articles == 0:
+        wiki_pages = Path(corpus_dir) / "wiki_pages" if corpus_dir else None
+        if wiki_pages and wiki_pages.exists():
+            all_pages = [p for p in wiki_pages.glob("*.json") if p.name != "index.json"]
+            total_articles = len(all_pages)
 
     return {
         "job_id": job_id,

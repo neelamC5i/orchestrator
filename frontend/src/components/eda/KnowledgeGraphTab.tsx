@@ -1,11 +1,20 @@
 "use client";
 
-import { ObservatoryData } from "./types";
+import { ObservatoryData, GraphifyData } from "./types";
 import { EmptyState } from "./common";
 import GraphWorkspace from "./GraphWorkspace";
 
-export default function KnowledgeGraphTab({ data }: { data: ObservatoryData }) {
-  const kg = data.knowledge_graph;
-  if (!kg?.entity_growth?.length && !kg?.top_connected_entities?.length) return <EmptyState />;
-  return <GraphWorkspace data={data} />;
+interface Props {
+  data: ObservatoryData;
+  graphData: GraphifyData | null;
+}
+
+export default function KnowledgeGraphTab({ data, graphData }: Props) {
+  const hasGraph = (graphData?.nodes?.length ?? 0) > 0;
+  const hasLegacyData =
+    (data.knowledge_graph?.entity_growth?.length ?? 0) > 0 ||
+    (data.knowledge_graph?.top_connected_entities?.length ?? 0) > 0;
+
+  if (!hasGraph && !hasLegacyData) return <EmptyState />;
+  return <GraphWorkspace data={data} graphData={graphData} />;
 }

@@ -115,3 +115,27 @@ export interface ObservatoryData {
     governance_alerts: Array<Record<string, unknown>>;
   };
 }
+
+export interface GraphifyNode {
+  id: string;
+  label: string;
+  type: string;
+  count: number;
+  community: number;
+  is_event_trigger: boolean;
+}
+
+export interface GraphifyEdge {
+  source: string;
+  target: string;
+  weight: number;
+  relation: string;
+}
+
+export interface GraphifyData {
+  job_id?: string;
+  node_count?: number;
+  edge_count?: number;
+  nodes: GraphifyNode[];
+  edges: GraphifyEdge[];
+}

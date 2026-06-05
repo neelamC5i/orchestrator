@@ -221,6 +221,19 @@ async def slm_suggestions(
                             title_m = _re.search(r"^# (.+)$", raw, _re.MULTILINE)
                             if title_m:
                                 entities.append(title_m.group(1).strip())
+                    if not entities:
+                        wiki_pages = _P(corpus_dir) / "wiki_pages"
+                        if wiki_pages.exists():
+                            for page_file in sorted(wiki_pages.glob("*.json"))[:8]:
+                                if page_file.name == "index.json":
+                                    continue
+                                try:
+                                    page = _json.loads(page_file.read_text(encoding="utf-8"))
+                                except Exception:
+                                    continue
+                                title = str(page.get("title") or page_file.stem).strip()
+                                if title:
+                                    entities.append(title)
                     if entities:
                         entity_hint = f" Key topics found in the data: {', '.join(entities[:6])}."
         except Exception:

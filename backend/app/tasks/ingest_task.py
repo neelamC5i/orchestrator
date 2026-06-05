@@ -80,6 +80,114 @@ def _fallback_graph_from_schema(metadata):
     return {"nodes": nodes, "edges": edges}
 
 
+def _export_graphify_compat(corpus_dir: str, graph_builder) -> dict:
+    """
+    Export compatibility artifacts under graphify-out/ from canonical graph + wiki_pages.
+    This keeps legacy graph/wiki/token endpoints functional without changing core pipeline logic.
+    """
+    from app.modules.data_curation.graphify_engine.wiki_serializer import WikiSerializer
+
+    out_dir = Path(corpus_dir) / "graphify-out"
+    wiki_dir = out_dir / "wiki"
+    out_dir.mkdir(parents=True, exist_ok=True)
+    wiki_dir.mkdir(parents=True, exist_ok=True)
+
+    # Reset wiki markdown outputs so repeated runs do not keep stale pages.
+    for md in wiki_dir.glob("*.md"):
+        try:
+            md.unlink()
+        except Exception:
+            pass
+
+    # 1) graphify-out/graph.json from canonical graph
+    canonical = graph_builder.get_canonical_graph()
+    nodes = []
+    for n in canonical.get("nodes", []):
+        nodes.append({
+            "id": n.get("id") or n.get("canonical_id") or n.get("label"),
+            "label": n.get("label") or n.get("id") or "",
+            "type": n.get("type") or n.get("entity_type") or "ENTITY",
+            "count": max(1, len(n.get("provenance", []))) if isinstance(n.get("provenance", []), list) else 1,
+            "community": n.get("community", 0),
+            "is_event_trigger": n.get("is_event_trigger", False),
+        })
+
+    edges = []
+    for e in canonical.get("edges", []):
+        edges.append({
+            "source": e.get("source") or e.get("source_canonical_id"),
+            "target": e.get("target") or e.get("target_canonical_id"),
+            "weight": float(e.get("confidence", 1.0) or 1.0),
+            "relation": e.get("relation", "related_to"),
+        })
+
+    graph_path = out_dir / "graph.json"
+    graph_path.write_text(json.dumps({"nodes": nodes, "edges": edges}), encoding="utf-8")
+
+    # 2) graphify-out/wiki/*.md from wiki_pages/*.json
+    wiki_pages_dir = Path(corpus_dir) / "wiki_pages"
+    page_files = sorted([p for p in wiki_pages_dir.glob("*.json") if p.name != "index.json"])
+    md_articles: list[dict] = []
+    for idx, page_file in enumerate(page_files):
+        try:
+            page = json.loads(page_file.read_text(encoding="utf-8"))
+        except Exception:
+            continue
+
+        title = str(page.get("title") or page_file.stem).strip() or page_file.stem
+        related = [
+            str(r.get("label") or r.get("canonical_id") or "").strip()
+            for r in page.get("related_entities", [])[:25]
+            if isinstance(r, dict)
+        ]
+        related = [r for r in related if r]
+
+        passages = []
+        summary = str(page.get("summary") or "").strip()
+        if summary:
+            passages.append(summary)
+        for fact in page.get("key_facts", [])[:6]:
+            if isinstance(fact, dict):
+                claim = str(fact.get("claim") or "").strip()
+                if claim:
+                    passages.append(claim)
+        for src in page.get("sources", [])[:4]:
+            if isinstance(src, dict):
+                excerpt = str(src.get("excerpt") or "").strip()
+                if excerpt:
+                    passages.append(excerpt)
+
+        lines = [f"# {title}", ""]
+        if related:
+            lines.append(f"**Other Entities:** {', '.join(related[:25])}")
+            lines.append("")
+        if passages:
+            lines.append("## Key passages")
+            lines.append("")
+            for p in passages[:8]:
+                lines.append(f"> {p}")
+                lines.append("")
+        md_text = "\n".join(lines).strip() + "\n"
+
+        md_name = f"community_{idx:04d}.md"
+        (wiki_dir / md_name).write_text(md_text, encoding="utf-8")
+        md_articles.append({"title": title, "content": md_text})
+
+    # 3) graphify-out/train.bin + val.bin
+    try:
+        if md_articles:
+            WikiSerializer(str(out_dir)).serialize(md_articles)
+    except Exception as exc:
+        logger.warning("graphify token export failed: %s", exc)
+
+    return {
+        "graph_path": str(graph_path),
+        "wiki_articles": len(md_articles),
+        "node_count": len(nodes),
+        "edge_count": len(edges),
+    }
+
+
 # ── Main file ingest pipeline ─────────────────────────────────────────────────
 
 @celery_app.task(name="run_ingest_pipeline", bind=True, max_retries=2)
@@ -424,6 +532,14 @@ def run_ingest_pipeline(self, job_id):  # noqa: C901
     steps[12]["detail"] = f"{wiki_count} wiki pages built"
     _update_steps(job_id, steps, 13, "ingesting")
 
+    # Export graphify-out compatibility artifacts from canonical graph/wiki.
+    graph_path = ""
+    try:
+        compat = _export_graphify_compat(corpus_dir, graph_builder)
+        graph_path = compat.get("graph_path", "")
+    except Exception as exc:
+        logger.warning("graphify compatibility export failed: %s", exc)
+
     # ── Layer 15 (idx 13): Embedding & FAISS indexing — terminal ─────────────
     steps[13]["status"] = "running"
     _update_steps(job_id, steps, 13, "ingesting")
@@ -437,7 +553,9 @@ def run_ingest_pipeline(self, job_id):  # noqa: C901
     steps[13]["detail"] = f"{embed_count} chunks indexed in FAISS"
 
     _update_steps(job_id, steps, 13, "graph_done", {
-        "entity_count": total_ents, "file_count": len(all_corpora),
+        "entity_count": total_ents,
+        "file_count": len(all_corpora),
+        "graph_path": graph_path,
     })
     logger.info("run_ingest_pipeline %s done in %ds", job_id, int(time.time() - started))
 

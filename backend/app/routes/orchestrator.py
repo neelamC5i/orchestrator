@@ -103,27 +103,60 @@ async def ask(request: AskRequest, db: AsyncSession = Depends(get_db)):
             )).mappings().first()
             if row:
                 domain_label = row["domain_label"] or domain_label
-                # Load graph context from graph.json
-                graph_path = row["graph_path"]
-                if graph_path and Path(graph_path).exists():
-                    g_data = _json.loads(Path(graph_path).read_text(encoding="utf-8"))
-                    nodes = g_data.get("nodes", [])
-                    edges = g_data.get("edges", [])
-                    graph_context = (
-                        f"Knowledge Graph: {len(nodes)} entities, {len(edges)} relationships.\n"
-                        + "\n".join(f"- {n.get('label', n.get('id', ''))} ({n.get('type', '')})" for n in nodes[:60])
-                    )
-                    coverage_topics = list({n.get("type", "") for n in nodes if n.get("type")})[:10]
-                # Load wiki articles from graphify-out/wiki/
+                # Resolve corpus dir from metadata/corpus_path and load graph context.
                 meta = row["metadata"] or {}
                 if isinstance(meta, str):
                     meta = _json.loads(meta)
                 corpus_dir = meta.get("corpus_dir") or row.get("corpus_path") or ""
+
+                graph_candidates = []
+                graph_path = row.get("graph_path")
+                if graph_path:
+                    graph_candidates.append(Path(graph_path))
+                if corpus_dir:
+                    graph_candidates.append(Path(corpus_dir) / "graphify-out" / "graph.json")
+                    graph_candidates.append(Path(corpus_dir) / "canonical_graph.json")
+
+                for gp in graph_candidates:
+                    if not gp.exists():
+                        continue
+                    try:
+                        g_data = _json.loads(gp.read_text(encoding="utf-8"))
+                    except Exception:
+                        continue
+                    nodes = g_data.get("nodes", [])
+                    edges = g_data.get("edges", [])
+                    graph_context = (
+                        f"Knowledge Graph: {len(nodes)} entities, {len(edges)} relationships.\n"
+                        + "\n".join(f"- {n.get('label', n.get('id', ''))} ({n.get('type', n.get('entity_type', ''))})" for n in nodes[:60])
+                    )
+                    coverage_topics = list({(n.get("type") or n.get("entity_type") or "") for n in nodes if (n.get("type") or n.get("entity_type"))})[:10]
+                    break
+
+                # Load wiki articles from graphify-out/wiki/; fallback to wiki_pages JSON.
                 if corpus_dir:
                     wiki_dir = Path(corpus_dir) / "graphify-out" / "wiki"
                     if wiki_dir.exists():
                         for md in sorted(wiki_dir.glob("*.md"))[:30]:
                             wiki_articles.append({"title": md.stem, "content": md.read_text(encoding="utf-8", errors="replace")})
+                    if not wiki_articles:
+                        wiki_pages = Path(corpus_dir) / "wiki_pages"
+                        for page_file in sorted(wiki_pages.glob("*.json"))[:30]:
+                            if page_file.name == "index.json":
+                                continue
+                            try:
+                                page = _json.loads(page_file.read_text(encoding="utf-8"))
+                            except Exception:
+                                continue
+                            title = page.get("title") or page_file.stem
+                            body = str(page.get("summary") or "").strip()
+                            if not body:
+                                facts = []
+                                for f in page.get("key_facts", [])[:5]:
+                                    if isinstance(f, dict) and f.get("claim"):
+                                        facts.append(str(f["claim"]))
+                                body = "\n".join(facts)
+                            wiki_articles.append({"title": title, "content": body})
         except Exception:
             pass  # non-fatal — proceed without context
 
