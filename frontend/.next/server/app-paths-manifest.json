@@ -1,8 +1,0 @@
-{
-  "/processing/page": "app/processing/page.js",
-  "/planning/page": "app/planning/page.js",
-  "/wiki/page": "app/wiki/page.js",
-  "/recommendations/page": "app/recommendations/page.js",
-  "/quality/page": "app/quality/page.js",
-  "/login/page": "app/login/page.js"
-}

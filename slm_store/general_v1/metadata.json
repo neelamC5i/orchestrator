@@ -1,9 +1,0 @@
-{
-  "domain_label": "general",
-  "coverage_topics": [],
-  "val_loss": 0.0,
-  "student_model": "HuggingFaceTB/SmolLM2-1.7B-Instruct",
-  "qlora_skipped": true,
-  "fallback_ollama_model": "mistral:latest",
-  "saved_at": "2026-05-05T11:44:21.343495"
-}
