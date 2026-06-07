@@ -52,6 +52,7 @@ services:
       - FRED_API_KEY=${FRED_API_KEY:-}
       - SLM_STORE_PATH=/app/slm_store
       - CORPUS_STORE_PATH=/app/corpus_store
+      - CORS_ORIGINS=${CORS_ORIGINS:-http://localhost:3000,http://127.0.0.1:3000}
     depends_on:
       postgres:
         condition: service_healthy
@@ -92,11 +93,14 @@ services:
     build:
       context: ./frontend
       dockerfile: Dockerfile
+      args:
+        API_PROXY_URL: http://backend:8000
     container_name: orchestrator_frontend
     ports:
       - "3000:3000"
     environment:
-      - NEXT_PUBLIC_API_URL=${NEXT_PUBLIC_API_URL:-http://localhost:8000}
+      - NEXT_PUBLIC_API_URL=${NEXT_PUBLIC_API_URL:-}
+      - API_PROXY_URL=${API_PROXY_URL:-http://backend:8000}
     depends_on:
       - backend
 

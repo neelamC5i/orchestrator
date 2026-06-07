@@ -165,7 +165,7 @@ Open a new terminal:
 ```bash
 cd frontend
 npm install
-NEXT_PUBLIC_API_URL=http://localhost:8000 npm run dev -- --port 3000
+npm run dev -- --port 3000
 ```
 
 Frontend available at `http://localhost:3000`.

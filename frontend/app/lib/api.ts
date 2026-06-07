@@ -1,4 +1,6 @@
-export const API_BASE = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8000";
+// Empty string = same-origin requests via Next.js /api rewrite (no CORS preflight).
+// Set NEXT_PUBLIC_API_URL only when the browser must call the backend directly.
+export const API_BASE = process.env.NEXT_PUBLIC_API_URL ?? "";
 
 function getAccessToken(): string | null {
   if (typeof window === "undefined") return null;
