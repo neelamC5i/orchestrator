@@ -341,7 +341,16 @@ function ProcessingPage() {
 
       // "graph_done" — pipeline complete, enter review mode
       if (status === "graph_done") {
-        const entities: string[] = ev.top_entities ?? [];
+        let entities: string[] = ev.top_entities ?? [];
+        if (entities.length === 0) {
+          try {
+            const previewRes = await fetch(`${API}/api/v1/pipeline/${jobId}/entities/preview?limit=20`);
+            if (previewRes.ok) {
+              const preview = await previewRes.json();
+              entities = preview.entities ?? [];
+            }
+          } catch { /* preview is non-critical */ }
+        }
         setTopEntities(entities);
         setStats(p => ({ ...p, entities: ev.entity_count ?? p.entities, communities: ev.community_count ?? p.communities }));
         fireAchievement("🕸️", "Pipeline complete!", `${ev.entity_count ?? 0} entities — review all layers before continuing`);

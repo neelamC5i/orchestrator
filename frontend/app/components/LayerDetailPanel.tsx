@@ -636,8 +636,8 @@ export default function LayerDetailPanel({ layer, jobId, onClose }: LayerDetailP
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  const fetchArtifacts = useCallback(async () => {
-    setLoading(true);
+  const fetchArtifacts = useCallback(async (silent = false) => {
+    if (!silent) setLoading(true);
     setError(null);
     const API = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8000";
     try {
@@ -654,7 +654,10 @@ export default function LayerDetailPanel({ layer, jobId, onClose }: LayerDetailP
 
   useEffect(() => {
     fetchArtifacts();
-  }, [fetchArtifacts]);
+    if (layer.status !== "running") return;
+    const intervalId = window.setInterval(() => fetchArtifacts(true), 2500);
+    return () => window.clearInterval(intervalId);
+  }, [fetchArtifacts, layer.status, layer.detail]);
 
   const Icon = LAYER_ICONS[layer.id] ?? FileText;
   const Renderer = DETAIL_RENDERERS[layer.id] ?? GenericDetail;
@@ -666,7 +669,7 @@ export default function LayerDetailPanel({ layer, jobId, onClose }: LayerDetailP
     parsedDetail = layer.detail ? { raw: layer.detail } : {};
   }
 
-  const displayData = artifacts ?? parsedDetail;
+  const displayData = artifacts ? { ...parsedDetail, ...artifacts } : parsedDetail;
 
   return (
     <div className="detail-slide bg-card2 border border-dborder rounded-card overflow-hidden">

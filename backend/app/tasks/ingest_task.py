@@ -17,6 +17,7 @@ import json
 import logging
 import os
 import time
+from datetime import datetime, timezone
 from pathlib import Path
 
 from app.tasks import celery_app
@@ -66,12 +67,20 @@ def _finish_step(steps, idx, detail="", error_code=None):
 
 def _update_steps(job_id, steps, current_idx, status, extra=None):
     done = sum(1 for s in steps if s.get("status") == "done")
-    pct = int(done / max(1, len(steps)) * 100)
+    running = sum(0.25 for s in steps if s.get("status") == "running")
+    pct = int(min(100, ((done + running) / max(1, len(steps))) * 100))
+    started_values = [s.get("started_at") for s in steps if s.get("started_at")]
+    pipeline_started_at = min(started_values) if started_values else time.time()
+    elapsed = max(0, time.time() - pipeline_started_at)
+    eta_seconds = None
+    if pct > 0 and status not in {"graph_done", "failed", "error"}:
+        eta_seconds = int(max(0, (elapsed / pct) * (100 - pct)))
     payload = json.dumps({
         "steps": steps,
         "current_step": current_idx,
         "overall_pct": pct,
-        "pipeline_started_at": time.time(),
+        "eta_seconds": eta_seconds,
+        "pipeline_started_at": pipeline_started_at,
     })
     extra_sql = ""
     vals = [status, payload]
@@ -543,8 +552,24 @@ def run_ingest_pipeline(self, job_id):  # noqa: C901
         "wiki_pages": wiki_count, "faiss_chunks_indexed": embed_count,
     }))
 
+    graph_path = os.path.join(corpus_dir, "canonical_graph.json")
+    community_count = 0
+    try:
+        with open(graph_path, encoding="utf-8") as f:
+            final_graph = json.load(f)
+        community_count = len({
+            n.get("community")
+            for n in final_graph.get("nodes", [])
+            if n.get("community") is not None
+        })
+    except Exception:
+        pass
+
     _update_steps(job_id, steps, 13, "graph_done", {
         "entity_count": total_ents, "file_count": len(all_corpora),
+        "community_count": community_count,
+        "graph_path": graph_path,
+        "completed_at": datetime.now(timezone.utc),
     })
     logger.info("run_ingest_pipeline %s done in %ds", job_id, int(time.time() - pipeline_started))
 

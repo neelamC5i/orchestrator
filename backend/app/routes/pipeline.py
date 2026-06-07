@@ -86,7 +86,7 @@ async def get_state(job_id: str):
         raise HTTPException(status_code=404, detail="Job not found")
 
     db_status, progress_json = result
-    progress = json.loads(progress_json) if progress_json else {}
+    progress = json.loads(progress_json) if isinstance(progress_json, str) else (progress_json or {})
 
     # Check Redis for gate states
     try:
@@ -531,7 +531,7 @@ async def entities_preview(job_id: str, limit: int = 20):
     from sqlalchemy.pool import NullPool
     from sqlalchemy import text as sql_text
     from app.config import get_settings
-    import json
+    import json, os
 
     s = get_settings()
     engine = create_async_engine(s.database_url, echo=False, poolclass=NullPool)
@@ -539,28 +539,39 @@ async def entities_preview(job_id: str, limit: int = 20):
 
     async with factory() as db:
         row = await db.execute(
-            sql_text("SELECT graph_path FROM ingest_jobs WHERE job_id = :id"),
+            sql_text("SELECT graph_path, metadata FROM ingest_jobs WHERE job_id = :id"),
             {"id": job_id},
         )
         result = row.fetchone()
 
     await engine.dispose()
 
-    if not result or not result[0]:
+    if not result:
+        raise HTTPException(status_code=404, detail="Job not found")
+
+    graph_path, meta_raw = result
+    if not graph_path:
+        meta = json.loads(meta_raw) if isinstance(meta_raw, str) else (meta_raw or {})
+        corpus_dir = meta.get("corpus_dir", f"corpus_store/{job_id}")
+        graph_path = os.path.join(corpus_dir, "canonical_graph.json")
+    if not os.path.exists(graph_path):
         raise HTTPException(status_code=404, detail="Graph not available yet")
 
-    import os
-    graph_path = result[0]
-    if not os.path.exists(graph_path):
-        raise HTTPException(status_code=404, detail="Graph file not found")
-
     try:
-        with open(graph_path) as f:
+        with open(graph_path, encoding="utf-8") as f:
             graph = json.load(f)
         nodes = graph.get("nodes", [])
-        # Sort by degree/weight if available
-        nodes_sorted = sorted(nodes, key=lambda n: n.get("weight", 0), reverse=True)
-        top = [n.get("label", n.get("id", "")) for n in nodes_sorted[:limit]]
+        nodes_sorted = sorted(
+            nodes,
+            key=lambda n: (
+                n.get("weight")
+                or n.get("degree")
+                or len(n.get("source_files", []) or [])
+                or n.get("confidence", 0)
+            ),
+            reverse=True,
+        )
+        top = [n.get("label") or n.get("canonical_id") or n.get("id", "") for n in nodes_sorted[:limit]]
         return {"job_id": job_id, "entities": top, "total": len(nodes)}
     except Exception as exc:
         raise HTTPException(status_code=500, detail=str(exc))
