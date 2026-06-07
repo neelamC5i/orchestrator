@@ -4,6 +4,7 @@ Used as response_model on the most critical endpoints.
 """
 from __future__ import annotations
 
+from datetime import datetime
 from typing import Any, Optional
 from pydantic import BaseModel
 
@@ -43,7 +44,7 @@ class CorpusItem(BaseModel):
     file_count: int = 0
     entity_count: int = 0
     community_count: int = 0
-    created_at: str | None = None
+    created_at: datetime | str | None = None
 
 
 # ── Pipeline ──────────────────────────────────────────────────────────────────
@@ -62,8 +63,8 @@ class PipelineLayerInfo(BaseModel):
     status: str
     pct: int = 0
     detail: Any = None
-    started_at: str | None = None
-    completed_at: str | None = None
+    started_at: datetime | str | None = None
+    completed_at: datetime | str | None = None
     error_code: str | None = None
 
 
@@ -84,8 +85,8 @@ class PipelineSnapshotResponse(BaseModel):
     entity_count: int = 0
     community_count: int = 0
     error: str | None = None
-    created_at: str | None = None
-    completed_at: str | None = None
+    created_at: datetime | str | None = None
+    completed_at: datetime | str | None = None
 
 
 class PipelineKpisResponse(BaseModel):

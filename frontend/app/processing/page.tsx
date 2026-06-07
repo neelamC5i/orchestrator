@@ -449,6 +449,7 @@ function ProcessingPage() {
       };
 
       connectSSE();
+    };
 
     const bootstrap = async () => {
       try {
@@ -730,6 +731,7 @@ function ProcessingPage() {
       {gateStep && (
         <ApprovalGate
           step={gateStep}
+          jobId={jobIdRef.current}
           stats={gateStats as Record<string, unknown>}
           onProceed={(cfg) => {
             if (cfg) {

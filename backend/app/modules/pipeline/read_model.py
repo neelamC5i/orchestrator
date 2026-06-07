@@ -1,8 +1,17 @@
 import glob
 import json
 import os
+from datetime import datetime
 from pathlib import Path
 from typing import Any
+
+
+def _to_iso(val: Any) -> str | None:
+    if val is None:
+        return None
+    if isinstance(val, datetime):
+        return val.isoformat()
+    return str(val)
 
 
 TERMINAL_STATUSES = {"graph_done", "failed", "error"}
@@ -92,8 +101,8 @@ def normalize_layers(progress: dict[str, Any], status: str) -> list[dict[str, An
                 "status": step.get("status", "pending"),
                 "pct": step.get("pct", 0),
                 "detail": step.get("detail") or "",
-                "started_at": step.get("started_at"),
-                "completed_at": step.get("completed_at"),
+                "started_at": _to_iso(step.get("started_at")),
+                "completed_at": _to_iso(step.get("completed_at")),
                 "error_code": step.get("error_code"),
             }
             for step in raw_steps
@@ -472,6 +481,6 @@ def build_snapshot(job_id: str, row: dict[str, Any]) -> dict[str, Any]:
         "entity_count": row.get("entity_count") or kpis.get("entities", 0),
         "community_count": row.get("community_count") or 0,
         "error": row.get("error_message") or row.get("error"),
-        "created_at": row.get("created_at"),
-        "completed_at": row.get("completed_at"),
+        "created_at": _to_iso(row.get("created_at")),
+        "completed_at": _to_iso(row.get("completed_at")),
     }
