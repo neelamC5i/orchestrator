@@ -75,12 +75,47 @@ def _update_steps(job_id, steps, current_idx, status, extra=None):
     eta_seconds = None
     if pct > 0 and status not in {"graph_done", "failed", "error"}:
         eta_seconds = int(max(0, (elapsed / pct) * (100 - pct)))
+
+    existing_logs = []
+    try:
+        conn = _pg_connect()
+        cur = conn.cursor()
+        cur.execute("SELECT progress FROM ingest_jobs WHERE job_id=%s", (job_id,))
+        row = cur.fetchone()
+        cur.close()
+        conn.close()
+        existing_progress = row[0] if row else {}
+        if isinstance(existing_progress, str):
+            existing_progress = json.loads(existing_progress)
+        if isinstance(existing_progress, dict):
+            existing_logs = existing_progress.get("logs", []) or []
+    except Exception:
+        existing_logs = []
+
+    current_step = steps[current_idx] if 0 <= current_idx < len(steps) else {}
+    log_entry = {
+        "ts": time.time(),
+        "status": status,
+        "layer_id": current_step.get("id"),
+        "message": f"{current_step.get('label', 'Pipeline')} {current_step.get('status', status)}",
+        "overall_pct": pct,
+    }
+    last_log = existing_logs[-1] if existing_logs else {}
+    if (
+        last_log.get("status") != log_entry["status"]
+        or last_log.get("layer_id") != log_entry["layer_id"]
+        or last_log.get("message") != log_entry["message"]
+        or last_log.get("overall_pct") != log_entry["overall_pct"]
+    ):
+        existing_logs = [*existing_logs, log_entry][-100:]
+
     payload = json.dumps({
         "steps": steps,
         "current_step": current_idx,
         "overall_pct": pct,
         "eta_seconds": eta_seconds,
         "pipeline_started_at": pipeline_started_at,
+        "logs": existing_logs,
     })
     extra_sql = ""
     vals = [status, payload]
@@ -733,7 +768,20 @@ def run_db_pipeline(self, job_id, conn_params):  # noqa: C901
     steps[6]["pct"] = 100
     steps[6]["detail"] = f"{embed_count} schema chunks indexed"
 
-    _update_steps(job_id, steps, 6, "graph_done", {"file_count": table_count})
+    db_graph_path = os.path.join(corpus_dir, "canonical_graph.json")
+    db_entity_count = 0
+    try:
+        with open(db_graph_path, encoding="utf-8") as f:
+            db_final_graph = json.load(f)
+        db_entity_count = len(db_final_graph.get("nodes", []))
+    except Exception:
+        pass
+    _update_steps(job_id, steps, 6, "graph_done", {
+        "file_count": table_count,
+        "entity_count": db_entity_count,
+        "graph_path": db_graph_path,
+        "completed_at": datetime.now(timezone.utc),
+    })
     logger.info("run_db_pipeline %s done in %ds", job_id, int(time.time() - started))
 
 
@@ -788,5 +836,7 @@ def reindex_pipeline(self, job_id):
     steps[1]["status"] = "done"
     steps[1]["pct"] = 100
     steps[1]["detail"] = f"{embed_count} chunks re-indexed"
-    _update_steps(job_id, steps, 1, "graph_done")
+    _update_steps(job_id, steps, 1, "graph_done", {
+        "completed_at": datetime.now(timezone.utc),
+    })
     logger.info("reindex_pipeline %s done in %ds", job_id, int(time.time() - started))

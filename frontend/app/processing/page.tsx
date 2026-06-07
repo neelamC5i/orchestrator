@@ -11,6 +11,44 @@ import SLMStudio, { type SLMConfig } from "../components/SLMStudio";
 
 interface EpochEntry { epoch: number; loss: number; }
 
+interface PipelineKpis {
+  entities: number;
+  relationships: number;
+  graph_nodes: number;
+  trust_score: number;
+  ontology_consistency: number;
+}
+
+interface PipelineSnapshotLog {
+  ts?: number | null;
+  status?: string;
+  layer_id?: string;
+  message?: string;
+  overall_pct?: number;
+}
+
+interface PipelineSnapshot {
+  job_id: string;
+  status: string;
+  overall_pct: number;
+  eta_seconds: number | null;
+  terminal: boolean;
+  layers: PipelineLayer[];
+  kpis: PipelineKpis;
+  previews: {
+    eda?: Record<string, unknown>;
+    kg?: Record<string, unknown>;
+    wiki?: Record<string, unknown>;
+    entities?: string[];
+  };
+  logs: PipelineSnapshotLog[];
+  artifacts_available: Record<string, boolean>;
+  file_count?: number;
+  entity_count?: number;
+  community_count?: number;
+  error?: string | null;
+}
+
 function formatEta(seconds: number | null): string {
   if (seconds === null || seconds === undefined) return "";
   if (seconds < 60) return `~${seconds}s remaining`;
@@ -113,6 +151,8 @@ function ProcessingPage() {
   const [activeLayerId, setActiveLayerId] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState<string>("pipeline");
   const [kpis, setKpis] = useState({ entities: 0, relationships: 0, graph_nodes: 0, trust_score: 0, ontology_consistency: 0 });
+  const [snapshot, setSnapshot] = useState<PipelineSnapshot | null>(null);
+  const [previews, setPreviews] = useState<PipelineSnapshot["previews"]>({});
 
   const [overallPct, setOverallPct] = useState(0);
   const [etaSeconds, setEtaSeconds] = useState<number | null>(null);
@@ -214,6 +254,52 @@ function ProcessingPage() {
     setKpis(newKpis);
   }, []);
 
+  const formatPipelineLog = useCallback((entry: PipelineSnapshotLog): string => {
+    const time = entry.ts ? new Date(entry.ts * 1000).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit", second: "2-digit" }) : "";
+    const pct = entry.overall_pct !== undefined ? ` ${entry.overall_pct}%` : "";
+    const prefix = time ? `[${time}]` : `[${entry.status ?? "pipeline"}]`;
+    return `${prefix}${pct} ${entry.message ?? entry.status ?? "Pipeline update"}`;
+  }, []);
+
+  const applySnapshot = useCallback((data: PipelineSnapshot, opts?: { reviewTerminal?: boolean }) => {
+    const mappedLayers = mapBackendSteps(data.layers as unknown as Record<string, unknown>[]);
+    const nextPreviews = data.previews ?? {};
+    setSnapshot(data);
+    setPreviews(nextPreviews);
+    setLayers(mappedLayers);
+    setNodes(mapLayersToCanvasNodes(mappedLayers));
+    setKpis(data.kpis ?? { entities: 0, relationships: 0, graph_nodes: 0, trust_score: 0, ontology_consistency: 0 });
+    setOverallPct(data.overall_pct ?? 0);
+    setEtaSeconds(data.eta_seconds ?? null);
+    setStats(p => ({
+      ...p,
+      files: data.file_count ?? p.files,
+      entities: data.entity_count ?? data.kpis?.entities ?? p.entities,
+      communities: data.community_count ?? p.communities,
+    }));
+
+    const entities = nextPreviews.entities ?? [];
+    if (entities.length > 0) setTopEntities(entities);
+    if (data.logs?.length) setLog(data.logs.map(formatPipelineLog).slice(-100));
+
+    if (opts?.reviewTerminal && data.status === "graph_done") {
+      deferredGraphDoneRef.current = {
+        entities,
+        entityCount: data.entity_count ?? data.kpis?.entities ?? 0,
+      };
+      setPipelineReviewPending(true);
+      setPhase("ingest");
+    }
+  }, [formatPipelineLog, mapBackendSteps]);
+
+  const fetchSnapshot = useCallback(async (API: string, jobId: string, opts?: { reviewTerminal?: boolean }) => {
+    const res = await fetch(`${API}/api/v1/pipeline/${jobId}/snapshot`);
+    if (!res.ok) throw new Error(`Snapshot HTTP ${res.status}`);
+    const data = await res.json() as PipelineSnapshot;
+    applySnapshot(data, opts);
+    return data;
+  }, [applySnapshot]);
+
   // Fetch available models on mount
   useEffect(() => {
     const API = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8000";
@@ -248,6 +334,120 @@ function ProcessingPage() {
 
     jobIdRef.current = jobId;
     const API = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8000";
+
+    let disposed = false;
+    let streamed = false;
+    let streamEs: EventSource | null = null;
+    let refreshTimer: ReturnType<typeof setInterval> | null = null;
+
+    const attachStream = () => {
+      if (streamed || disposed) return;
+      streamed = true;
+      setNodeStatus("import", "running");
+      addLog("Import pipeline started — streaming progress...");
+
+      streamEs = new EventSource(`${API}/api/v1/data/progress/${jobId}`);
+      esRef.current = streamEs;
+
+      refreshTimer = setInterval(() => {
+        fetchSnapshot(API, jobId).catch(() => {});
+      }, 5000);
+
+      streamEs.onmessage = async (e) => {
+        const ev = JSON.parse(e.data);
+        setOverallPct(ev.overall_pct ?? 0);
+        setEtaSeconds(ev.eta_seconds ?? null);
+        if (ev.file_count) setStats(p => ({ ...p, files: ev.file_count }));
+        if (ev.entity_count) setStats(p => ({ ...p, entities: ev.entity_count }));
+        if (ev.community_count) setStats(p => ({ ...p, communities: ev.community_count }));
+
+        const status = ev.status;
+        if (ev.logs?.length) {
+          setLog((ev.logs as PipelineSnapshotLog[]).map(formatPipelineLog).slice(-100));
+        } else {
+          addLog(`[${status}] ${ev.overall_pct ?? 0}%`);
+        }
+
+        if (ev.pipeline_steps?.steps?.length > 0) {
+          const mappedLayers = mapBackendSteps(ev.pipeline_steps.steps);
+          setLayers(mappedLayers);
+          setNodes(mapLayersToCanvasNodes(mappedLayers));
+          extractKpisFromLayers(mappedLayers);
+        }
+
+        if (ev.pipeline_steps?.steps) {
+          const stepsData = ev.pipeline_steps.steps as Record<string, unknown>[];
+          const uploadDone = stepsData.find(s => s.id === "upload" && s.status === "done");
+          if (uploadDone && !gatesShownRef.current.has("upload_ach")) {
+            gatesShownRef.current.add("upload_ach");
+            fireAchievement("📥", "Data imported!", "Files uploaded and tracked");
+          }
+          const entitiesDone = stepsData.find(s => s.id === "entities" && s.status === "done");
+          if (entitiesDone && !gatesShownRef.current.has("entities_ach")) {
+            gatesShownRef.current.add("entities_ach");
+            fireAchievement("🔍", "Entities extracted!", "NLP pipeline complete");
+          }
+          const graphDone = stepsData.find(s => s.id === "graph_build" && s.status === "done");
+          if (graphDone && !gatesShownRef.current.has("graph_ach")) {
+            gatesShownRef.current.add("graph_ach");
+            fireAchievement("🕸️", "Knowledge graph built!", "Graph construction complete");
+          }
+        }
+
+        if (status === "graph_done") {
+          fireAchievement("🕸️", "Pipeline complete!", `${ev.entity_count ?? 0} entities — review all layers before continuing`);
+          await fetchSnapshot(API, jobId, { reviewTerminal: true }).catch(() => {});
+          streamEs?.close();
+          if (refreshTimer) clearInterval(refreshTimer);
+          addLog("Pipeline complete — review all layers, then confirm to continue.");
+        } else if (status === "failed") {
+          await fetchSnapshot(API, jobId, { reviewTerminal: true }).catch(() => {});
+          addLog(`Pipeline failed: ${ev.error ?? ""}`);
+          streamEs?.close();
+          if (refreshTimer) clearInterval(refreshTimer);
+        }
+      };
+
+      streamEs.onerror = () => { addLog("SSE connection lost — retrying..."); };
+    };
+
+    const bootstrap = async () => {
+      try {
+        const snap = await fetchSnapshot(API, jobId, { reviewTerminal: !reuseCorpus });
+        if (disposed) return;
+
+        if (reuseCorpus) {
+          const q = sessionStorage.getItem("query");
+          if (!q) { router.push("/query"); return; }
+          setNodes(RESULT_NODES.map(n => n.id === "ai" ? { ...n, status: "running" as NodeStatus } : n));
+          setPhase("orchestrator");
+          addLog("Reusing existing knowledge base — starting AI model selection...");
+          startOrchestrator(API, q, domainLabel);
+          return;
+        }
+
+        if (snap.terminal) {
+          addLog(snap.status === "graph_done"
+            ? "Pipeline loaded from completed snapshot — review all layers, then confirm to continue."
+            : `Pipeline loaded with status ${snap.status}.`);
+          return;
+        }
+
+        attachStream();
+      } catch (err: unknown) {
+        addLog(err instanceof Error ? `Snapshot load failed: ${err.message}` : "Snapshot load failed");
+        if (!reuseCorpus) attachStream();
+      }
+    };
+
+    bootstrap();
+
+    return () => {
+      disposed = true;
+      if (refreshTimer) clearInterval(refreshTimer);
+      streamEs?.close();
+      esRef.current?.close();
+    };
 
     if (reuseCorpus) {
       const q = sessionStorage.getItem("query");
@@ -587,6 +787,13 @@ function ProcessingPage() {
     : layers.filter(l => (TAB_LAYER_MAP[activeTab] ?? []).includes(l.id));
 
   const activeLayer = activeLayerId ? layers.find(l => l.id === activeLayerId) ?? null : null;
+  const activeInitialArtifacts = activeLayer?.id === "eda"
+    ? previews.eda
+    : activeLayer?.id === "graph_build"
+      ? previews.kg
+      : activeLayer?.id === "wiki"
+        ? previews.wiki
+        : undefined;
 
   return (
     <div>
@@ -835,6 +1042,7 @@ function ProcessingPage() {
               <LayerDetailPanel
                 layer={activeLayer}
                 jobId={jobIdRef.current}
+                initialArtifacts={activeInitialArtifacts}
                 onClose={() => setActiveLayerId(null)}
               />
             </div>

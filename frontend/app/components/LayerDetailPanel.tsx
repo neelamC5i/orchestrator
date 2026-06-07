@@ -7,6 +7,7 @@ import type { PipelineLayer } from "./PipelineLayerList";
 interface LayerDetailPanelProps {
   layer: PipelineLayer;
   jobId: string;
+  initialArtifacts?: ArtifactData;
   onClose: () => void;
 }
 
@@ -36,6 +37,15 @@ function formatDuration(startMs: number | null, endMs: number | null): string {
 
 function SectionTitle({ children }: { children: ReactNode }) {
   return <div className="text-[10px] font-semibold text-t3 uppercase tracking-wider mb-2">{children}</div>;
+}
+
+function EmptyState({ title, detail }: { title: string; detail: string }) {
+  return (
+    <div className="bg-bg3 border border-dborder rounded-sm px-3 py-3">
+      <div className="text-[11px] font-semibold text-t2">{title}</div>
+      <div className="text-[10px] text-t3 mt-0.5 leading-relaxed">{detail}</div>
+    </div>
+  );
 }
 
 function MetricBar({ label, value, max, color = "bg-accent", showPct = false }: { key?: Key; label: string; value: number; max: number; color?: string; showPct?: boolean }) {
@@ -244,8 +254,8 @@ function SemanticDetail({ data }: { data: ArtifactData }) {
 function EDADetail({ data }: { data: ArtifactData }) {
   const scorecards = (data.scorecards as Record<string, number>[]) ?? [];
   const visuals = (data.visuals as Record<string, unknown>[]) ?? [];
-  const firstCard = scorecards[0] ?? {};
-  const firstVisual = visuals[0] ?? {};
+  const firstCard = scorecards[0] ?? (data.scorecard as Record<string, number> | undefined) ?? {};
+  const firstVisual = visuals[0] ?? data;
 
   const SCORE_KEYS = [
     "completeness_score", "consistency_score", "confidence_score",
@@ -260,6 +270,7 @@ function EDADetail({ data }: { data: ArtifactData }) {
 
   const graphMetrics = (data.eda_summaries as Record<string, unknown>[])
     ?.[0]?.graph_metrics as Record<string, unknown> | undefined;
+  const directGraphMetrics = (data.graph_metrics as Record<string, unknown> | undefined) ?? graphMetrics;
 
   return (
     <div className="space-y-4">
@@ -312,13 +323,17 @@ function EDADetail({ data }: { data: ArtifactData }) {
         </div>
       )}
 
-      {graphMetrics && (
+      {!scorecards.length && !visuals.length && (
+        <EmptyState title="EDA visuals unavailable" detail="The pipeline did not produce EDA artifact files for this job yet. If the source has no extracted entities or relationships, this can be a valid empty result." />
+      )}
+
+      {directGraphMetrics && (
         <div>
           <SectionTitle>Graph Metrics</SectionTitle>
           <div className="grid grid-cols-3 gap-2">
-            <MiniStat label="Nodes" value={graphMetrics.node_count as number ?? 0} />
-            <MiniStat label="Edges" value={graphMetrics.edge_count as number ?? 0} />
-            <MiniStat label="Density" value={(graphMetrics.graph_density as number ?? 0).toFixed(4)} />
+            <MiniStat label="Nodes" value={directGraphMetrics.node_count as number ?? 0} />
+            <MiniStat label="Edges" value={directGraphMetrics.edge_count as number ?? 0} />
+            <MiniStat label="Density" value={(directGraphMetrics.graph_density as number ?? 0).toFixed(4)} />
           </div>
         </div>
       )}
@@ -459,12 +474,14 @@ function CanonicalDetail({ data }: { data: ArtifactData }) {
 function GraphBuildDetail({ data }: { data: ArtifactData }) {
   const centralEntities = (data.central_entities as { label: string; type: string; confidence: number; source_count: number }[]) ?? [];
   const confDist = data.edge_confidence_distribution as { low: number; medium: number; high: number } | undefined;
+  const nodeCount = (data.graph_nodes as number) ?? (data.node_count as number) ?? 0;
+  const edgeCount = (data.graph_edges as number) ?? (data.edge_count as number) ?? 0;
 
   return (
     <div className="space-y-4">
       <div className="grid grid-cols-3 gap-2">
-        <MiniStat label="Graph Nodes" value={(data.graph_nodes as number) ?? (data.node_count as number) ?? 0} />
-        <MiniStat label="Graph Edges" value={(data.graph_edges as number) ?? (data.edge_count as number) ?? 0} />
+        <MiniStat label="Graph Nodes" value={nodeCount} />
+        <MiniStat label="Graph Edges" value={edgeCount} />
         <MiniStat label="File Graphs" value={(data.per_file_graph_count as number) ?? 0} />
       </div>
       <div className="grid grid-cols-3 gap-2">
@@ -498,6 +515,10 @@ function GraphBuildDetail({ data }: { data: ArtifactData }) {
             ])}
           />
         </div>
+      )}
+
+      {nodeCount === 0 && edgeCount === 0 && (
+        <EmptyState title="Knowledge graph not generated yet" detail="No canonical graph nodes or edges are available for this job. The snapshot will populate this panel as soon as graph artifacts are written." />
       )}
     </div>
   );
@@ -607,6 +628,10 @@ function WikiDetail({ data }: { data: ArtifactData }) {
           </div>
         </div>
       )}
+
+      {samplePages.length === 0 && pages.length === 0 && (
+        <EmptyState title="Wiki not generated yet" detail="No wiki pages are available for this corpus. This panel will populate after the Wiki + Explainability layer writes its page index." />
+      )}
     </div>
   );
 }
@@ -631,9 +656,9 @@ const DETAIL_RENDERERS: Record<string, FC<{ data: ArtifactData }>> = {
   graph_build: GraphBuildDetail, graph_consist: GraphConsistDetail, wiki: WikiDetail,
 };
 
-export default function LayerDetailPanel({ layer, jobId, onClose }: LayerDetailPanelProps) {
-  const [artifacts, setArtifacts] = useState<ArtifactData | null>(null);
-  const [loading, setLoading] = useState(true);
+export default function LayerDetailPanel({ layer, jobId, initialArtifacts, onClose }: LayerDetailPanelProps) {
+  const [artifacts, setArtifacts] = useState<ArtifactData | null>(initialArtifacts ?? null);
+  const [loading, setLoading] = useState(!initialArtifacts);
   const [error, setError] = useState<string | null>(null);
 
   const fetchArtifacts = useCallback(async (silent = false) => {
@@ -653,11 +678,13 @@ export default function LayerDetailPanel({ layer, jobId, onClose }: LayerDetailP
   }, [jobId, layer.id]);
 
   useEffect(() => {
-    fetchArtifacts();
+    setArtifacts(initialArtifacts ?? null);
+    setLoading(!initialArtifacts);
+    fetchArtifacts(Boolean(initialArtifacts));
     if (layer.status !== "running") return;
     const intervalId = window.setInterval(() => fetchArtifacts(true), 2500);
     return () => window.clearInterval(intervalId);
-  }, [fetchArtifacts, layer.status, layer.detail]);
+  }, [fetchArtifacts, initialArtifacts, layer.status, layer.detail]);
 
   const Icon = LAYER_ICONS[layer.id] ?? FileText;
   const Renderer = DETAIL_RENDERERS[layer.id] ?? GenericDetail;
@@ -695,20 +722,8 @@ export default function LayerDetailPanel({ layer, jobId, onClose }: LayerDetailP
           </button>
         </div>
 
-        {/* Status strip */}
+        {/* Runtime metadata */}
         <div className="flex items-center gap-4 text-[10px]">
-          <div className="flex items-center gap-1.5">
-            {layer.status === "done" && <CheckCircle2 className="w-3 h-3 text-gg" />}
-            {layer.status === "running" && <Loader2 className="w-3 h-3 text-amber animate-spin" />}
-            {layer.status === "error" && <AlertTriangle className="w-3 h-3 text-coral" />}
-            {layer.status === "pending" && <Clock className="w-3 h-3 text-t3" />}
-            <span className={`font-semibold uppercase tracking-wider ${
-              layer.status === "done" ? "text-gg"
-              : layer.status === "running" ? "text-amber"
-              : layer.status === "error" ? "text-coral"
-              : "text-t3"
-            }`}>{layer.status}</span>
-          </div>
           <div className="flex items-center gap-1 text-t3">
             <Clock className="w-3 h-3" />
             <span>Started {formatTimestamp(layer.started_at)}</span>

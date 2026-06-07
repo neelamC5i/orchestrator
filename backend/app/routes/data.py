@@ -321,6 +321,7 @@ async def stream_progress(job_id: str, db: AsyncSession = Depends(get_db)):
                 "community_count": row_dict.get("community_count", 0),
                 "file_count": row_dict.get("file_count", 0),
                 "error": row_dict.get("error_message"),
+                "logs": progress.get("logs", []),
                 "pipeline_steps": progress,
             }
             yield f"data: {json.dumps(event)}\n\n"

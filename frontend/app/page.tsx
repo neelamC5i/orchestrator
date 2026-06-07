@@ -98,6 +98,7 @@ export default function WorkspacePage() {
       const data = await res.json();
       sessionStorage.setItem("job_id",       data.job_id);
       sessionStorage.setItem("domain_label", effectiveDomain);
+      sessionStorage.setItem("pipeline_reused", data.reused ? "true" : "false");
       sessionStorage.removeItem("query");
       sessionStorage.removeItem("reuse_corpus");
       router.push("/processing");
