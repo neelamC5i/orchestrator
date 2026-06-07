@@ -3,6 +3,7 @@
 import { useEffect, useState, useCallback, type ReactNode, type FC, type Key } from "react";
 import { X, Clock, CheckCircle2, AlertTriangle, Loader2, FileText, Database, Brain, BarChart3, Shield, Network, BookOpen } from "lucide-react";
 import type { PipelineLayer } from "./PipelineLayerList";
+import { API_BASE } from "../lib/api";
 
 interface LayerDetailPanelProps {
   layer: PipelineLayer;
@@ -664,7 +665,7 @@ export default function LayerDetailPanel({ layer, jobId, initialArtifacts, onClo
   const fetchArtifacts = useCallback(async (silent = false) => {
     if (!silent) setLoading(true);
     setError(null);
-    const API = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8000";
+    const API = API_BASE;
     try {
       const res = await fetch(`${API}/api/v1/pipeline/${jobId}/layer/${layer.id}`);
       if (!res.ok) throw new Error(`HTTP ${res.status}`);

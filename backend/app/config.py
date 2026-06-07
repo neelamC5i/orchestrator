@@ -58,6 +58,14 @@ class Settings(BaseSettings):
     # Graphify
     graphify_token_budget: int = 50000
 
+    # Authentication
+    auth_secret_key: str = "orchestrator-dev-secret-change-in-production"
+    auth_algorithm: str = "HS256"
+    auth_access_token_expire_minutes: int = 60
+    auth_refresh_token_expire_minutes: int = 1440  # 24 hours
+    auth_username: str = "admin"
+    auth_password: str = "orchestrator"
+
     class Config:
         env_file = ".env"
         env_file_encoding = "utf-8"

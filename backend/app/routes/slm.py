@@ -12,6 +12,7 @@ from app.db.database import get_db
 from app.modules.slm_factory.slm_registry import SLMRegistry
 from app.adapters.registry import get_adapter_registry
 from app.config import get_settings
+from app.schemas import SLMStatusResponse, SLMStatsResponse, SLMForCorpusResponse
 
 settings = get_settings()
 router = APIRouter(prefix="/slm", tags=["slm"])
@@ -104,7 +105,7 @@ async def trigger_build(request: BuildRequest, db: AsyncSession = Depends(get_db
         raise HTTPException(status_code=500, detail=str(exc))
 
 
-@router.get("/for-corpus")
+@router.get("/for-corpus", response_model=SLMForCorpusResponse)
 async def slm_for_corpus(job_id: str, db: AsyncSession = Depends(get_db)):
     """Return the most recent SLM built for a corpus (by job_id), or not-found."""
     registry = SLMRegistry(db)
@@ -152,7 +153,7 @@ async def approve_install(request: ApproveInstallRequest, db: AsyncSession = Dep
         raise HTTPException(status_code=500, detail=str(exc))
 
 
-@router.get("/status")
+@router.get("/status", response_model=SLMStatusResponse)
 async def slm_status(
     domain_label: str,
     task_id: str | None = None,
@@ -172,8 +173,10 @@ async def slm_status(
             result = celery_app.AsyncResult(task_id)
             if result.state == "FAILURE":
                 return {"status": "failed", "model_id": None, "domain_label": domain_label}
-            if result.state in ("PENDING", "STARTED", "RETRY"):
-                return {"status": "building", "model_id": None, "domain_label": domain_label}
+            if result.state == "PENDING":
+                return {"status": "queued", "model_id": None, "domain_label": domain_label}
+            if result.state in ("STARTED", "RETRY"):
+                return {"status": "running", "model_id": None, "domain_label": domain_label}
         except Exception:
             pass
     return {"status": "none", "model_id": None, "domain_label": domain_label}
@@ -294,7 +297,7 @@ async def slm_suggestions(
     return {"suggestions": fallback, "source": "fallback"}
 
 
-@router.get("/stats")
+@router.get("/stats", response_model=SLMStatsResponse)
 async def get_stats(db: AsyncSession = Depends(get_db)):
     """Aggregate stats used by dashboard."""
     registry = SLMRegistry(db)

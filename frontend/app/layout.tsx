@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import "./globals.css";
 import Topbar from "./components/Topbar";
 import LayoutShell from "./components/LayoutShell";
+import ErrorBoundary from "./components/ErrorBoundary";
 
 export const metadata: Metadata = {
   title: "AI Fine-Tuning Orchestrator",
@@ -19,7 +20,9 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
       <body className="bg-bg text-t1 min-h-screen font-sora">
         <Topbar />
         <LayoutShell>
-          {children}
+          <ErrorBoundary>
+            {children}
+          </ErrorBoundary>
         </LayoutShell>
       </body>
     </html>

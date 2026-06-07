@@ -3,6 +3,7 @@
 import { useState, useEffect, useRef } from "react";
 import { getProcessPlan, getProcessMeta, type ProcessStep, type ProcessStepMeta, type PathType as ProcessPathType } from "../lib/processTemplates";
 import { loadCustomTemplates, customTemplateToProcessSteps, type CustomTemplate } from "../lib/customTemplates";
+import { API_BASE } from "../lib/api";
 
 interface StoredCorpus {
   job_id: string; domain_label: string; file_count: number; entity_count: number; created_at: string;
@@ -521,7 +522,7 @@ function assembleSystemPrompt(intent: PathType, answers: Record<string,string>):
 }
 
 export default function PromptBuilder({ corpus, onUsePrompt, onManual }: PromptBuilderProps) {
-  const API = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
+  const API = API_BASE;
   const [wikiArticles, setWikiArticles] = useState<WikiArticle[]>([]);
   const [hasSLM, setHasSLM]             = useState(false);
   const [slmSuggestionItems, setSlmSuggestionItems] = useState<string[]>([]);
@@ -572,8 +573,11 @@ export default function PromptBuilder({ corpus, onUsePrompt, onManual }: PromptB
         .catch(()=>{}),
       fetch(`${API}/api/v1/slm/suggestions?domain_label=${encodeURIComponent(corpus.domain_label)}${jobParam}`)
         .then(r => r.ok ? r.json() : Promise.resolve({ suggestions: [], source: "fallback" }))
-        .then((d: {suggestions?: string[]; source?: string}) => {
-          const items = Array.isArray(d.suggestions) ? d.suggestions : [];
+        .then((d: {suggestions?: (string | {label?: string; desc?: string; prompt?: string})[]; source?: string}) => {
+          const raw = Array.isArray(d.suggestions) ? d.suggestions : [];
+          const items = raw.map((s) =>
+            typeof s === "string" ? s : (s.prompt ?? s.label ?? String(s))
+          );
           setSlmSuggestionItems(items.slice(0, 10));
           setSlmSuggestionSource(d.source === "slm" ? "slm" : "fallback");
         })

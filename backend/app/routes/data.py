@@ -109,7 +109,10 @@ async def ingest(
         from app.tasks.ingest_task import run_ingest_pipeline
         run_ingest_pipeline.delay(job_id)
     except Exception as exc:
-        return JSONResponse({"job_id": job_id, "status": "queued", "warning": str(exc)})
+        return JSONResponse(
+            {"job_id": job_id, "status": "dispatch_failed", "error": f"Task queue unavailable: {exc}"},
+            status_code=503,
+        )
 
     return {"job_id": job_id, "status": "queued", "file_count": len(saved_files)}
 
@@ -120,12 +123,26 @@ async def test_connection(creds: DBCredentials):
     import asyncio
     db_type = creds.db_type.lower()
     try:
+        schema = {}
         if db_type == "postgresql":
             import asyncpg
             conn_str = creds.connection_string or (
                 f"postgresql://{creds.username}:{creds.password}@{creds.host}:{creds.port}/{creds.database}"
             )
             conn = await asyncio.wait_for(asyncpg.connect(conn_str), timeout=5)
+            try:
+                rows = await conn.fetch(
+                    "SELECT table_name, column_name, data_type "
+                    "FROM information_schema.columns "
+                    "WHERE table_schema = 'public' "
+                    "ORDER BY table_name, ordinal_position"
+                )
+                for r in rows:
+                    schema.setdefault(r["table_name"], []).append(
+                        {"column": r["column_name"], "type": r["data_type"]}
+                    )
+            except Exception:
+                pass
             await conn.close()
         elif db_type == "mysql":
             import aiomysql
@@ -133,14 +150,37 @@ async def test_connection(creds: DBCredentials):
                 aiomysql.connect(host=creds.host, port=creds.port, user=creds.username,
                                  password=creds.password, db=creds.database), timeout=5
             )
+            try:
+                async with conn.cursor(aiomysql.DictCursor) as cur:
+                    await cur.execute(
+                        "SELECT table_name, column_name, data_type "
+                        "FROM information_schema.columns "
+                        "WHERE table_schema = %s "
+                        "ORDER BY table_name, ordinal_position",
+                        (creds.database,),
+                    )
+                    for r in await cur.fetchall():
+                        schema.setdefault(r["TABLE_NAME"], []).append(
+                            {"column": r["COLUMN_NAME"], "type": r["DATA_TYPE"]}
+                        )
+            except Exception:
+                pass
             conn.close()
         elif db_type == "sqlite":
             import aiosqlite
-            async with aiosqlite.connect(creds.database) as _:
-                pass
+            async with aiosqlite.connect(creds.database) as sconn:
+                sconn.row_factory = aiosqlite.Row
+                cur = await sconn.execute(
+                    "SELECT name FROM sqlite_master WHERE type='table' ORDER BY name"
+                )
+                tables = [row[0] for row in await cur.fetchall()]
+                for tbl in tables:
+                    info_cur = await sconn.execute(f"PRAGMA table_info(\"{tbl}\")")
+                    cols = await info_cur.fetchall()
+                    schema[tbl] = [{"column": c[1], "type": c[2]} for c in cols]
         else:
             return {"success": False, "message": f"Unsupported db_type: {db_type}"}
-        return {"success": True, "message": f"Connected to {db_type} successfully"}
+        return {"success": True, "message": f"Connected to {db_type} successfully", "schema": schema}
     except Exception as exc:
         return {"success": False, "message": str(exc)}
 
@@ -834,7 +874,7 @@ async def ingestion_report(
     import json as _json
     import os as _os
     row = (await db.execute(
-        text("SELECT status, pipeline_steps, entity_count, file_count FROM ingest_jobs WHERE job_id=:id"),
+        text("SELECT status, progress, entity_count, file_count FROM ingest_jobs WHERE job_id=:id"),
         {"id": job_id},
     )).fetchone()
     if not row:

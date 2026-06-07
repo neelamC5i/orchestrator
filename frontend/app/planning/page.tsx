@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
+import { API_BASE } from "../lib/api";
 
 // ─── Types ───────────────────────────────────────────────────────────────────
 type PathType = "BUILDER" | "RESEARCHER" | "ANALYST" | "AUDITOR" | "SUMMARIZER";
@@ -390,10 +391,9 @@ export default function PlanningPage() {
 
     // Fetch AI-generated suggestions from the SLM
     if (dl) {
-      const API = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8000";
       const params = new URLSearchParams({ domain_label: dl });
       if (jid) params.set("job_id", jid);
-      fetch(`${API}/api/v1/slm/suggestions?${params}`)
+      fetch(`${API_BASE}/api/v1/slm/suggestions?${params}`)
         .then(r => r.json())
         .then(data => {
           const raw: { label?: string; desc?: string; prompt?: string }[] = data.suggestions ?? [];

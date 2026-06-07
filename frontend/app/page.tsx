@@ -2,6 +2,7 @@
 
 import { useState, useCallback } from "react";
 import { useRouter } from "next/navigation";
+import { API_BASE } from "./lib/api";
 
 const DOMAIN_PRESETS = [
   { id: "manufacturing",  label: "Manufacturing",   icon: "🏭", desc: "Production, supply chain, quality control" },
@@ -58,8 +59,7 @@ export default function WorkspacePage() {
     setIsConnecting(true);
     setSchemaPreview(null);
     try {
-      const API = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8000";
-      const res = await fetch(`${API}/api/v1/data/test-connection`, {
+      const res = await fetch(`${API_BASE}/api/v1/data/test-connection`, {
         method: "POST", headers: { "Content-Type": "application/json" },
         body: JSON.stringify(dbCreds),
       });
@@ -82,7 +82,6 @@ export default function WorkspacePage() {
     setIsSubmitting(true);
     setError("");
     try {
-      const API = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8000";
       const form = new FormData();
       for (const f of files) form.append("files", f);
       form.append("domain_label", effectiveDomain);
@@ -94,7 +93,7 @@ export default function WorkspacePage() {
         form.append("username", dbCreds.username);
         form.append("password", dbCreds.password);
       }
-      const res  = await fetch(`${API}/api/v1/data/ingest`, { method: "POST", body: form });
+      const res  = await fetch(`${API_BASE}/api/v1/data/ingest`, { method: "POST", body: form });
       const data = await res.json();
       sessionStorage.setItem("job_id",       data.job_id);
       sessionStorage.setItem("domain_label", effectiveDomain);

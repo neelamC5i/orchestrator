@@ -137,6 +137,43 @@ def _update_steps(job_id, steps, current_idx, status, extra=None):
         logger.warning("_update_steps failed: %s", exc)
 
 
+def _check_gate(job_id: str, step: str, timeout: int = 600) -> bool:
+    """Block until the gate for this step is approved or timeout expires.
+    Returns True if approved, False if timed out.
+    If no gate is set (i.e. gates not enabled), returns True immediately."""
+    try:
+        import redis
+        from app.config import get_settings
+        settings = get_settings()
+        r = redis.from_url(settings.redis_url, decode_responses=True)
+        if not r.exists(f"pipeline_config:{job_id}"):
+            return True
+        config_raw = r.get(f"pipeline_config:{job_id}")
+        if config_raw:
+            config = json.loads(config_raw)
+            if not config.get("gates_enabled", False):
+                return True
+    except Exception:
+        return True
+
+    waited = 0
+    poll_interval = 2
+    while waited < timeout:
+        try:
+            if r.exists(f"pipeline_pause:{job_id}"):
+                time.sleep(poll_interval)
+                waited += poll_interval
+                continue
+            gate_val = r.get(f"gate:{job_id}:{step}")
+            if gate_val == "approved":
+                return True
+        except Exception:
+            return True
+        time.sleep(poll_interval)
+        waited += poll_interval
+    return True
+
+
 def _fallback_graph_from_schema(metadata):
     nodes, edges = [], []
     for table in metadata.get("tables", []):

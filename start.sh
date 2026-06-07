@@ -25,11 +25,11 @@ sleep 1
 nohup .venv/bin/celery -A app.tasks worker --loglevel=info --concurrency=2 > /tmp/celery.log 2>&1 &
 echo "   Celery PID: $!"
 
-echo "==> Starting Frontend (Next.js on :3001)..."
+echo "==> Starting Frontend (Next.js on :3000)..."
 kill $(pgrep -f "next start") 2>/dev/null || true
 sleep 1
 cd "$FRONTEND"
-nohup npm start -- -p 3001 > /tmp/frontend.log 2>&1 &
+PORT=3000 nohup npm start > /tmp/frontend.log 2>&1 &
 echo "   Frontend PID: $!"
 
 echo ""
@@ -37,7 +37,7 @@ echo "Waiting for services..."
 sleep 5
 
 echo -n "Backend:  "; curl -s http://localhost:8000/health || echo "NOT UP"
-echo -n "Frontend: "; curl -s http://localhost:3001 > /dev/null && echo '{"status":"ok"}' || echo "NOT UP"
+echo -n "Frontend: "; curl -s http://localhost:3000 > /dev/null && echo '{"status":"ok"}' || echo "NOT UP"
 echo -n "Celery:   "; pgrep -f "celery.*worker" > /dev/null && echo "running (PID $(pgrep -f 'celery.*worker' | head -1))" || echo "NOT RUNNING"
 
 echo ""

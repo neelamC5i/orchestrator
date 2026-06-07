@@ -8,6 +8,7 @@ import LayerDetailPanel from "../components/LayerDetailPanel";
 import ApprovalGate, { type GateStep } from "../components/ApprovalGate";
 import AchievementToast, { fireAchievement } from "../components/AchievementToast";
 import SLMStudio, { type SLMConfig } from "../components/SLMStudio";
+import { API_BASE } from "../lib/api";
 
 interface EpochEntry { epoch: number; loss: number; }
 
@@ -208,7 +209,7 @@ function ProcessingPage() {
   };
 
   const fetchKpis = useCallback(async (jobId: string) => {
-    const API = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8000";
+    const API = API_BASE;
     try {
       const res = await fetch(`${API}/api/v1/pipeline/${jobId}/kpis`);
       if (res.ok) {
@@ -302,7 +303,7 @@ function ProcessingPage() {
 
   // Fetch available models on mount
   useEffect(() => {
-    const API = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8000";
+    const API = API_BASE;
     fetch(`${API}/api/v1/models`)
       .then(r => r.json())
       .then(d => {
@@ -333,12 +334,14 @@ function ProcessingPage() {
     if (!jobId) { router.push("/"); return; }
 
     jobIdRef.current = jobId;
-    const API = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8000";
+    const API = API_BASE;
 
     let disposed = false;
     let streamed = false;
     let streamEs: EventSource | null = null;
     let refreshTimer: ReturnType<typeof setInterval> | null = null;
+    let sseRetryCount = 0;
+    const SSE_MAX_RETRIES = 5;
 
     const attachStream = () => {
       if (streamed || disposed) return;
@@ -346,8 +349,11 @@ function ProcessingPage() {
       setNodeStatus("import", "running");
       addLog("Import pipeline started — streaming progress...");
 
-      streamEs = new EventSource(`${API}/api/v1/data/progress/${jobId}`);
-      esRef.current = streamEs;
+      const connectSSE = () => {
+        if (disposed) return;
+        streamEs = new EventSource(`${API}/api/v1/data/progress/${jobId}`);
+        esRef.current = streamEs;
+        sseRetryCount = 0;
 
       refreshTimer = setInterval(() => {
         fetchSnapshot(API, jobId).catch(() => {});
@@ -408,8 +414,21 @@ function ProcessingPage() {
         }
       };
 
-      streamEs.onerror = () => { addLog("SSE connection lost — retrying..."); };
-    };
+        streamEs.onerror = () => {
+          streamEs?.close();
+          if (disposed) return;
+          sseRetryCount++;
+          if (sseRetryCount > SSE_MAX_RETRIES) {
+            addLog("SSE connection lost — max retries reached. Use the browser refresh to retry.");
+            return;
+          }
+          const delay = Math.min(1000 * Math.pow(2, sseRetryCount - 1), 15000);
+          addLog(`SSE connection lost — reconnecting in ${Math.round(delay / 1000)}s (attempt ${sseRetryCount}/${SSE_MAX_RETRIES})...`);
+          setTimeout(connectSSE, delay);
+        };
+      };
+
+      connectSSE();
 
     const bootstrap = async () => {
       try {
@@ -577,7 +596,7 @@ function ProcessingPage() {
     if (!deferred) return;
 
     const jobId = jobIdRef.current;
-    const API = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8000";
+    const API = API_BASE;
 
     setNodeStatus("graph", "waiting-approval");
     await showGate("graph", { entityCount: deferred.entityCount, topEntities: deferred.entities });
@@ -629,7 +648,7 @@ function ProcessingPage() {
   };
 
   const triggerSlmBuild = async (cfg: SLMConfig, quickRebuild: boolean) => {
-    const API = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8000";
+    const API = API_BASE;
     const jobId = sessionStorage.getItem("job_id") ?? "";
     const domainLabel = sessionStorage.getItem("domain_label") ?? "general";
     setSlmBuildStatus("queued");
@@ -710,6 +729,17 @@ function ProcessingPage() {
   const handleOrchestratorEvent = async (event: Record<string, unknown>) => {
     addLog(`[${event.type ?? event.phase}] ${JSON.stringify(event).slice(0, 120)}`);
 
+    if (event.type === "model_context") {
+      sessionStorage.setItem("orch_model_context", JSON.stringify(event.data));
+    }
+    if (event.type === "warning") {
+      try {
+        const existing = JSON.parse(sessionStorage.getItem("orch_warnings") || "[]");
+        existing.push(event.message ?? event.code ?? "unknown warning");
+        sessionStorage.setItem("orch_warnings", JSON.stringify(existing));
+      } catch { /**/ }
+    }
+
     if (event.phase === "slm_build") {
       if (event.type === "step" && event.step === 3 && event.val_loss !== undefined) {
         setEpochs(prev => [...prev, { epoch: prev.length + 1, loss: event.val_loss as number }]);
@@ -767,7 +797,7 @@ function ProcessingPage() {
   const approveInstall = async () => {
     if (!buildModelId) return;
     setApproving(true);
-    const API = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8000";
+    const API = API_BASE;
     try {
       await fetch(`${API}/api/v1/slm/approve-install`, {
         method: "POST",

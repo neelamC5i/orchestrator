@@ -1,0 +1,81 @@
+name: API Contract Check
+
+on:
+  push:
+    paths:
+      - 'backend/app/routes/**'
+      - 'backend/app/schemas.py'
+      - 'frontend/app/lib/api-types.ts'
+  pull_request:
+    paths:
+      - 'backend/app/routes/**'
+      - 'backend/app/schemas.py'
+      - 'frontend/app/lib/api-types.ts'
+
+jobs:
+  contract-check:
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: pgvector/pgvector:pg16
+        env:
+          POSTGRES_USER: orchestrator
+          POSTGRES_PASSWORD: orchestrator_secret
+          POSTGRES_DB: orchestrator
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 5
+      redis:
+        image: redis:7-alpine
+        ports:
+          - 6379:6379
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Install backend dependencies
+        run: pip install -r backend/requirements.txt
+        working-directory: .
+
+      - name: Extract OpenAPI spec
+        env:
+          DATABASE_URL: postgresql+asyncpg://orchestrator:orchestrator_secret@localhost:5432/orchestrator
+          REDIS_URL: redis://localhost:6379
+        run: python scripts/extract-openapi.py > /tmp/openapi.json
+        working-directory: backend
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Install frontend dependencies
+        run: npm ci
+        working-directory: frontend
+
+      - name: Generate TypeScript types from OpenAPI
+        run: npx openapi-typescript /tmp/openapi.json -o app/lib/api-types.generated.ts
+        working-directory: frontend
+
+      - name: Check for type drift
+        run: npx tsc --noEmit
+        working-directory: frontend
+
+      - name: Diff OpenAPI spec
+        if: github.event_name == 'pull_request'
+        run: |
+          git fetch origin ${{ github.base_ref }}
+          git show origin/${{ github.base_ref }}:backend/openapi.json > /tmp/openapi-base.json 2>/dev/null || echo '{}' > /tmp/openapi-base.json
+          if ! diff -q /tmp/openapi-base.json /tmp/openapi.json > /dev/null 2>&1; then
+            echo "::warning::OpenAPI spec has changed. Review the diff for breaking changes."
+            diff /tmp/openapi-base.json /tmp/openapi.json || true
+          fi

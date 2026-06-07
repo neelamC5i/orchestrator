@@ -15,6 +15,7 @@ from sqlalchemy import text
 from typing import List, Optional
 
 from app.db.database import get_db
+from app.schemas import WikiReviewsResponse
 
 router = APIRouter(prefix="/wiki", tags=["wiki"])
 
@@ -66,7 +67,7 @@ async def get_wiki_page(
     return page
 
 
-@router.get("/{job_id}/reviews")
+@router.get("/{job_id}/reviews", response_model=WikiReviewsResponse)
 async def list_entity_reviews(
     job_id: str,
     status: str = Query("pending"),
@@ -75,8 +76,8 @@ async def list_entity_reviews(
 ):
     corpus_dir = await _corpus_dir(job_id, db)
     from app.modules.kg.entity_resolution import list_pending_reviews
-    reviews = list_pending_reviews(corpus_dir, status=status, limit=limit)
-    return {"reviews": reviews, "total": len(reviews)}
+    result = list_pending_reviews(corpus_dir, status=status, limit=limit)
+    return {"reviews": result["reviews"], "total": result["count"]}
 
 
 @router.post("/{job_id}/review/{review_id}")

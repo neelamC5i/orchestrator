@@ -3,6 +3,7 @@
 import { useEffect, useState, useRef } from "react";
 import { useRouter } from "next/navigation";
 import ReactMarkdown from "react-markdown";
+import { API_BASE } from "../lib/api";
 
 interface StepExplanation {
   what: string; why: string; what_we_found: string; decision_made: string;
@@ -972,7 +973,7 @@ export default function RecommendationsPage() {
     setStepTweakLoading(p => ({ ...p, [step.id]: true }));
     setStepTweakError(p => ({ ...p, [step.id]: "" }));
     setStepTweakReplies(p => ({ ...p, [step.id]: "" }));
-    const API = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
+    const API = API_BASE;
     const domainLabel = sessionStorage.getItem("domain_label") ?? "general";
     const originalQuery = sessionStorage.getItem("original_query") ?? sessionStorage.getItem("query") ?? "";
 
@@ -1081,7 +1082,7 @@ export default function RecommendationsPage() {
     if (!newQuery || !jobId || regenerating) return;
     setRegenerating(true);
     setRegenError(null);
-    const API = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
+    const API = API_BASE;
     const domainLabel = sessionStorage.getItem("domain_label") ?? "general";
     const systemPrompt = sessionStorage.getItem("system_prompt") ?? "";
     try {
@@ -1127,7 +1128,7 @@ export default function RecommendationsPage() {
   const sendFeedback = async (modelId: string, taskType: string, idx: number, isCorrect: boolean) => {
     const key = `${idx}`;
     setFeedbackSent(p => ({ ...p, [key]: isCorrect ? "correct" : "incorrect" }));
-    const API = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
+    const API = API_BASE;
     try {
       await fetch(`${API}/api/v1/feedback`, {
         method: "POST",
@@ -1163,7 +1164,7 @@ export default function RecommendationsPage() {
     setChatMessages(prev => [...prev, { role: "user", content: msg }]);
     setIsChatting(true);
     try {
-      const API = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
+      const API = API_BASE;
       const res = await fetch(`${API}/api/v1/orchestrator/ask`, {
         method: "POST", headers: { "Content-Type": "application/json" },
         body: JSON.stringify({

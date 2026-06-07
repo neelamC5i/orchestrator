@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import AchievementToast from "../components/AchievementToast";
+import { API_BASE } from "../lib/api";
 
 interface DashboardStats {
   tokens_saved?: number;
@@ -112,8 +113,9 @@ export default function DashboardPage() {
   const [nashTask, setNashTask] = useState("general_reasoning");
 
   const [expandedSessions, setExpandedSessions] = useState<Set<string>>(new Set());
+  const [fetchErrors, setFetchErrors] = useState<string[]>([]);
 
-  const API = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
+  const API = API_BASE;
 
   useEffect(() => {
     try {
@@ -122,14 +124,20 @@ export default function DashboardPage() {
     } catch { /* ignore */ }
 
     setLoading(true);
+    setFetchErrors([]);
     fetch(`${API}/api/v1/slm/stats`)
-      .then(r => r.json()).then(setStats).catch(() => {}).finally(() => setLoading(false));
+      .then(r => r.json()).then(setStats)
+      .catch(() => setFetchErrors(prev => [...prev, "Stats unavailable"]))
+      .finally(() => setLoading(false));
     fetch(`${API}/api/v1/slm/learning-progress`)
-      .then(r => r.json()).then(setLearning).catch(() => {});
+      .then(r => r.json()).then(setLearning)
+      .catch(() => setFetchErrors(prev => [...prev, "Learning progress unavailable"]));
     fetch(`${API}/api/v1/models/bandit-status`)
-      .then(r => r.json()).then(d => setBanditArms(d.arms ?? [])).catch(() => {});
+      .then(r => r.json()).then(d => setBanditArms(d.arms ?? []))
+      .catch(() => setFetchErrors(prev => [...prev, "Bandit status unavailable"]));
     fetch(`${API}/api/v1/models/insights/general_reasoning`)
-      .then(r => r.json()).then(setNashInsights).catch(() => {});
+      .then(r => r.json()).then(setNashInsights)
+      .catch(() => setFetchErrors(prev => [...prev, "Nash insights unavailable"]));
   }, []);
 
   const loadNashTask = (task: string) => {
@@ -182,6 +190,12 @@ export default function DashboardPage() {
   return (
     <div>
       <AchievementToast />
+      {fetchErrors.length > 0 && (
+        <div className="mx-6 mt-4 px-4 py-3 rounded-lg bg-amber-500/10 border border-amber-500/30 text-amber-400 text-xs">
+          <span className="font-semibold">Some data may be unavailable:</span>{" "}
+          {fetchErrors.join(", ")}
+        </div>
+      )}
       {/* Page header */}
       <div className="bg-card border-b border-dborder px-0 py-7 mb-7">
         <div className="w-full px-12">

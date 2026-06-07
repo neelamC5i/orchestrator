@@ -30,10 +30,11 @@ export default function Topbar() {
   }, [pathname]);
 
   function handleLogout() {
-    // Clear auth cookie
     document.cookie = "orch_logged_in=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT";
     localStorage.removeItem("orch_logged_in");
     localStorage.removeItem("orch_user");
+    localStorage.removeItem("orch_access_token");
+    localStorage.removeItem("orch_refresh_token");
     router.replace("/login");
   }
 

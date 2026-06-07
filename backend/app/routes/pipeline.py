@@ -12,6 +12,7 @@ from sqlalchemy import text
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.db.database import get_db
+from app.schemas import PipelineSnapshotResponse, PipelineKpisResponse, EntitiesPreviewResponse
 from app.modules.pipeline.read_model import (
     TERMINAL_STATUSES,
     build_layer_artifacts,
@@ -72,7 +73,7 @@ def _build_topology(layers: list[dict]) -> list[dict]:
     ]
 
 
-@router.get("/{job_id}/snapshot")
+@router.get("/{job_id}/snapshot", response_model=PipelineSnapshotResponse)
 async def get_snapshot(job_id: str, db: AsyncSession = Depends(get_db)):
     """Return the Processing page read model: progress, KPIs, previews, and logs."""
     row = await _job_row(job_id, db)
@@ -179,14 +180,14 @@ async def get_layer_detail(job_id: str, layer_id: str, db: AsyncSession = Depend
     }
 
 
-@router.get("/{job_id}/kpis")
+@router.get("/{job_id}/kpis", response_model=PipelineKpisResponse)
 async def get_pipeline_kpis(job_id: str, db: AsyncSession = Depends(get_db)):
     """Return aggregate header KPIs for the pipeline dashboard."""
     snapshot = build_snapshot(job_id, await _job_row(job_id, db))
     return {"job_id": job_id, "kpis": snapshot["kpis"]}
 
 
-@router.get("/{job_id}/entities/preview")
+@router.get("/{job_id}/entities/preview", response_model=EntitiesPreviewResponse)
 async def entities_preview(job_id: str, limit: int = 20, db: AsyncSession = Depends(get_db)):
     """Return top entities from the knowledge graph for the given job."""
     snapshot = build_snapshot(job_id, await _job_row(job_id, db))

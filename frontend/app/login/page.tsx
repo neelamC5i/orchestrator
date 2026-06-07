@@ -1,12 +1,8 @@
 "use client";
 
 import { useState, useEffect } from "react";
-
 import { useRouter } from "next/navigation";
-
-// Default credentials — override via NEXT_PUBLIC_AUTH_USER / NEXT_PUBLIC_AUTH_PASS in .env.local
-const VALID_USER = process.env.NEXT_PUBLIC_AUTH_USER ?? "admin";
-const VALID_PASS = process.env.NEXT_PUBLIC_AUTH_PASS ?? "orchestrator";
+import { API_BASE } from "../lib/api";
 
 export default function LoginPage() {
   const router = useRouter();
@@ -16,31 +12,40 @@ export default function LoginPage() {
   const [loading, setLoading] = useState(false);
   const [showPass, setShowPass] = useState(false);
 
-  // Already logged in → skip straight to dashboard
   useEffect(() => {
     if (typeof window !== "undefined" && localStorage.getItem("orch_logged_in") === "true") {
       router.replace("/dashboard");
     }
   }, [router]);
 
-  function handleSubmit(e: React.FormEvent) {
+  async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     setError("");
     setLoading(true);
 
-    // Small artificial delay so the button doesn't flash
-    setTimeout(() => {
-      if (username.trim() === VALID_USER && password === VALID_PASS) {
-        // Write a cookie so middleware can guard routes server-side
-        document.cookie = "orch_logged_in=true; path=/; SameSite=Lax";
-        localStorage.setItem("orch_logged_in", "true");
-        localStorage.setItem("orch_user", username.trim());
-        router.replace("/dashboard");
-      } else {
-        setError("Invalid username or password.");
+    try {
+      const res = await fetch(`${API_BASE}/api/v1/auth/login`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ username: username.trim(), password }),
+      });
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({ detail: "Login failed" }));
+        setError(data.detail ?? "Invalid username or password.");
         setLoading(false);
+        return;
       }
-    }, 400);
+      const data = await res.json();
+      localStorage.setItem("orch_access_token", data.access_token);
+      localStorage.setItem("orch_refresh_token", data.refresh_token);
+      localStorage.setItem("orch_logged_in", "true");
+      localStorage.setItem("orch_user", username.trim());
+      document.cookie = "orch_logged_in=true; path=/; SameSite=Lax";
+      router.replace("/dashboard");
+    } catch {
+      setError("Unable to reach the server. Is the backend running?");
+      setLoading(false);
+    }
   }
 
   return (

@@ -1,9 +1,7 @@
 "use client";
 
 import { useEffect, useState, useCallback } from "react";
-import Topbar from "../components/Topbar";
-
-const API = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
+import { API_BASE as API } from "../lib/api";
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 interface Corpus { job_id: string; domain_label?: string; entity_count?: number; file_count?: number; }
@@ -133,6 +131,7 @@ export default function QualityPage() {
         const list: Corpus[] = Array.isArray(d) ? d : d.corpora ?? [];
         setCorpora(list);
         if (list.length > 0) setSelectedJob(list[0].job_id);
+        try { localStorage.setItem("orch_corpora", JSON.stringify(list)); } catch { /**/ }
       })
       .catch(() => {});
   }, []);
@@ -194,7 +193,6 @@ export default function QualityPage() {
 
   return (
     <div className="flex flex-col min-h-screen bg-bg2">
-      <Topbar />
 
       {/* Header */}
       <div className="flex items-center gap-4 px-6 py-3 border-b border-dborder bg-bg1 flex-shrink-0">

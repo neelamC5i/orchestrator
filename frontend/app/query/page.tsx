@@ -3,6 +3,7 @@
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import PromptBuilder from "../components/PromptBuilder";
+import { API_BASE } from "../lib/api";
 
 interface StoredCorpus {
   job_id: string;
@@ -116,10 +117,9 @@ export default function QueryPage() {
     })();
     setSavedCorpora(local);
 
-    const API = process.env.NEXT_PUBLIC_API_URL || "";
     const domainLbl = sessionStorage.getItem("domain_label") ?? "general";
 
-    fetch(`${API}/api/v1/slm/status?domain_label=${encodeURIComponent(domainLbl)}`)
+    fetch(`${API_BASE}/api/v1/slm/status?domain_label=${encodeURIComponent(domainLbl)}`)
       .then(r => r.json())
       .then(d => {
         if (d.status === "done") { setSlmStatus("done"); setSlmModelId(d.model_id ?? null); }

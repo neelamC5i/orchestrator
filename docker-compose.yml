@@ -65,7 +65,7 @@ services:
       context: ./backend
       dockerfile: Dockerfile
     container_name: orchestrator_celery
-    command: celery -A app.worker worker --loglevel=info --concurrency=2
+    command: celery -A app.tasks worker --loglevel=info --concurrency=2
     volumes:
       - ./backend:/app
       - slm_store:/app/slm_store

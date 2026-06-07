@@ -1,11 +1,13 @@
 "use client";
 
 import { useState } from "react";
+import { API_BASE, apiFetch } from "../lib/api";
 
 export type GateStep = "import" | "dedup" | "quality" | "graph" | "model";
 
 interface GateProps {
   step: GateStep;
+  jobId: string;
   stats: {
     docCount?: number;
     fileNames?: string[];
@@ -41,18 +43,33 @@ const GATE_META: Record<GateStep, { title: string; icon: string; color: string }
   model:   { title: "AI Models Selected",       icon: "🤖", color: "#6c5cf7" },
 };
 
-export default function ApprovalGate({ step, stats, onProceed, onSkip }: GateProps) {
+export default function ApprovalGate({ step, jobId, stats, onProceed, onSkip }: GateProps) {
   const meta = GATE_META[step];
   const [dedupSensitivity, setDedupSensitivity] = useState(3);
   const [qualityThreshold, setQualityThreshold] = useState(70);
   const aiPrimary = stats.models?.find(m => m.isPrimary) ?? stats.models?.[0] ?? null;
   const [selectedModel, setSelectedModel] = useState<string | null>(aiPrimary?.name ?? null);
 
-  const handleProceed = () => {
+  const handleProceed = async () => {
     const cfg: Record<string, unknown> = {};
     if (step === "dedup")   cfg.dedup_sensitivity = dedupSensitivity;
     if (step === "quality") cfg.quality_threshold = qualityThreshold / 100;
     if (step === "model" && selectedModel) cfg.selected_model = selectedModel;
+
+    const backendStep = step === "dedup" ? "clean" : step;
+    try {
+      if (Object.keys(cfg).length > 0) {
+        await apiFetch(`${API_BASE}/api/v1/pipeline/${jobId}/config`, {
+          method: "PATCH",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(cfg),
+        });
+      }
+      await apiFetch(`${API_BASE}/api/v1/pipeline/${jobId}/approve/${backendStep}`, {
+        method: "POST",
+      });
+    } catch { /* proceed anyway if backend call fails */ }
+
     onProceed(cfg);
   };
 

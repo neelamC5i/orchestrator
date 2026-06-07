@@ -1,12 +1,32 @@
 import asyncio
 import logging
+import sys
+import traceback
 from contextlib import asynccontextmanager
-from fastapi import FastAPI
+from fastapi import FastAPI, Depends, Request
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import JSONResponse
+from fastapi.exceptions import RequestValidationError
+from starlette.exceptions import HTTPException as StarletteHTTPException
 
 from app.config import get_settings
 from app.db.database import engine, Base
+from app.auth import get_current_user
+from app.middleware import RequestIdMiddleware
 
+# ── Structured logging setup ──────────────────────────────────────────────────
+try:
+    from pythonjsonlogger import jsonlogger
+    handler = logging.StreamHandler(sys.stdout)
+    handler.setFormatter(jsonlogger.JsonFormatter(
+        fmt="%(asctime)s %(levelname)s %(name)s %(message)s",
+        rename_fields={"asctime": "timestamp", "levelname": "level"},
+    ))
+    logging.root.handlers = [handler]
+except ImportError:
+    logging.basicConfig(level=logging.INFO, stream=sys.stdout)
+
+logging.getLogger("orchestrator").setLevel(logging.INFO)
 logger = logging.getLogger("orchestrator.startup")
 from app.routes import (
     orchestrator_router,
@@ -16,6 +36,7 @@ from app.routes import (
     evaluation_router,
     feedback_router,
 )
+from app.routes.auth import router as auth_router
 from app.routes.pipeline import router as pipeline_router
 from app.routes.wiki import router as wiki_router
 from app.routes.links import router as links_router
@@ -70,27 +91,65 @@ app = FastAPI(
     lifespan=lifespan,
 )
 
+app.add_middleware(RequestIdMiddleware)
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],
-    allow_credentials=False,
+    allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
 )
 
-app.include_router(orchestrator_router, prefix="/api/v1")
-app.include_router(data_router,         prefix="/api/v1")
-app.include_router(models_router,       prefix="/api/v1")
-app.include_router(slm_router,          prefix="/api/v1")
-app.include_router(evaluation_router,   prefix="/api/v1")
-app.include_router(feedback_router,     prefix="/api/v1")
-app.include_router(pipeline_router,     prefix="/api/v1")
-app.include_router(wiki_router,         prefix="/api/v1")
-app.include_router(links_router,        prefix="/api/v1")
-app.include_router(quality_router,      prefix="/api/v1")
-app.include_router(repair_router,       prefix="/api/v1")
-app.include_router(db_router,           prefix="/api/v1")
-app.include_router(eda_router,          prefix="/api/v1")
+
+@app.exception_handler(StarletteHTTPException)
+async def http_exception_handler(_request: Request, exc: StarletteHTTPException):
+    return JSONResponse(
+        status_code=exc.status_code,
+        content={"error": {"code": f"HTTP_{exc.status_code}", "message": str(exc.detail)}},
+    )
+
+
+@app.exception_handler(RequestValidationError)
+async def validation_exception_handler(_request: Request, exc: RequestValidationError):
+    return JSONResponse(
+        status_code=422,
+        content={
+            "error": {
+                "code": "VALIDATION_ERROR",
+                "message": "Request validation failed",
+                "details": exc.errors(),
+            }
+        },
+    )
+
+
+@app.exception_handler(Exception)
+async def unhandled_exception_handler(_request: Request, exc: Exception):
+    logger.error("Unhandled exception: %s\n%s", exc, traceback.format_exc())
+    return JSONResponse(
+        status_code=500,
+        content={"error": {"code": "INTERNAL_ERROR", "message": "An unexpected error occurred"}},
+    )
+
+
+# Auth routes (public — no token required)
+app.include_router(auth_router, prefix="/api/v1")
+
+# Protected routes (require valid JWT)
+protected = [Depends(get_current_user)]
+app.include_router(orchestrator_router, prefix="/api/v1", dependencies=protected)
+app.include_router(data_router,         prefix="/api/v1", dependencies=protected)
+app.include_router(models_router,       prefix="/api/v1", dependencies=protected)
+app.include_router(slm_router,          prefix="/api/v1", dependencies=protected)
+app.include_router(evaluation_router,   prefix="/api/v1", dependencies=protected)
+app.include_router(feedback_router,     prefix="/api/v1", dependencies=protected)
+app.include_router(pipeline_router,     prefix="/api/v1", dependencies=protected)
+app.include_router(wiki_router,         prefix="/api/v1", dependencies=protected)
+app.include_router(links_router,        prefix="/api/v1", dependencies=protected)
+app.include_router(quality_router,      prefix="/api/v1", dependencies=protected)
+app.include_router(repair_router,       prefix="/api/v1", dependencies=protected)
+app.include_router(db_router,           prefix="/api/v1", dependencies=protected)
+app.include_router(eda_router,          prefix="/api/v1", dependencies=protected)
 
 
 @app.get("/health")
