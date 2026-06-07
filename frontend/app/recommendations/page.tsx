@@ -27,6 +27,7 @@ interface OrchestratorOutput {
   model_recommendations: ModelRec[]; sub_task_results: SubTaskResult[];
   final_answer: string; hallucination_rate: number; total_tokens_used: number;
   tokens_saved_by_compression: number; build_in_progress: boolean; error?: string;
+  cached_hit?: boolean;
 }
 interface ChatMessage { role: "user" | "assistant"; content: string; }
 

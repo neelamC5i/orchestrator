@@ -38,19 +38,36 @@ export default function WorkspacePage() {
   const [isSubmitting, setIsSubmitting]     = useState(false);
   const [error, setError]                   = useState("");
 
+  const ALLOWED_EXT = new Set([".csv",".json",".jsonl",".txt",".pdf",".xlsx",".xls",".parquet",".md",".docx",".doc"]);
+  const MAX_FILE_MB = 100;
+
+  const validateFiles = (incoming: File[]): File[] => {
+    const rejected: string[] = [];
+    const accepted: File[] = [];
+    for (const f of incoming) {
+      const ext = f.name.includes(".") ? `.${f.name.split(".").pop()!.toLowerCase()}` : "";
+      if (!ALLOWED_EXT.has(ext)) { rejected.push(`${f.name}: unsupported type`); continue; }
+      if (f.size > MAX_FILE_MB * 1024 * 1024) { rejected.push(`${f.name}: exceeds ${MAX_FILE_MB}MB`); continue; }
+      accepted.push(f);
+    }
+    if (rejected.length) setError(rejected.join("; "));
+    return accepted;
+  };
+
   const onDrop = useCallback((e: React.DragEvent) => {
     e.preventDefault();
+    const validated = validateFiles(Array.from(e.dataTransfer.files));
     setFiles(prev => {
       const existing = new Set(prev.map(f => f.name));
-      return [...prev, ...Array.from(e.dataTransfer.files).filter(f => !existing.has(f.name))];
+      return [...prev, ...validated.filter(f => !existing.has(f.name))];
     });
   }, []);
 
   const onFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const incoming = Array.from(e.target.files ?? []);
+    const validated = validateFiles(Array.from(e.target.files ?? []));
     setFiles(prev => {
       const existing = new Set(prev.map(f => f.name));
-      return [...prev, ...incoming.filter(f => !existing.has(f.name))];
+      return [...prev, ...validated.filter(f => !existing.has(f.name))];
     });
   };
 

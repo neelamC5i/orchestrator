@@ -309,6 +309,8 @@ def run_ingest_pipeline(self, job_id):  # noqa: C901
     }))
     _update_steps(job_id, steps, 2, "ingesting")
 
+    _check_gate(job_id, "extract")
+
     # ── Layer 3: Cleaning + Normalization ─────────────────────────────────────
     _begin_step(steps, 2)
     _update_steps(job_id, steps, 2, "ingesting")
@@ -385,6 +387,8 @@ def run_ingest_pipeline(self, job_id):  # noqa: C901
         "extraction_errors": entity_errors,
     }))
     _update_steps(job_id, steps, 6, "ingesting")
+
+    _check_gate(job_id, "entities")
 
     # ── Layer 7: Semantic Learning (confidence scoring) ───────────────────────
     _begin_step(steps, 6)
@@ -577,6 +581,8 @@ def run_ingest_pipeline(self, job_id):  # noqa: C901
     }))
     _update_steps(job_id, steps, 12, "ingesting")
 
+    _check_gate(job_id, "graph_build")
+
     # ── Layer 13: Graph Consistency ───────────────────────────────────────────
     _begin_step(steps, 12)
     _update_steps(job_id, steps, 12, "ingesting")
@@ -596,6 +602,8 @@ def run_ingest_pipeline(self, job_id):  # noqa: C901
         "suppressed_edges": graph_metrics_data.get("suppressed_edge_count", 0),
     }))
     _update_steps(job_id, steps, 13, "ingesting")
+
+    _check_gate(job_id, "graph_consist")
 
     # ── Layer 14: Wiki + Explainability ───────────────────────────────────────
     _begin_step(steps, 13)

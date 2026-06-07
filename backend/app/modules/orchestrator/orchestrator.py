@@ -28,6 +28,7 @@ from app.modules.slm_factory.slm_store import SLMStore
 from app.modules.slm_factory.bandit import get_bandit, save_bandit
 from app.modules.model_capability_catalog import ModelCapabilityCatalog
 from app.modules.token_efficiency.compressor import get_compressor
+from app.modules.token_efficiency.semantic_cache import SemanticCache
 from app.modules.evaluation.hallucination_detector import HallucinationDetector
 from app.modules.orchestrator.orchestrator_output import (
     OrchestratorOutput, OrchestratorStep, StepExplanation,
@@ -92,6 +93,7 @@ class Orchestrator:
         self._slm_registry = slm_registry
         self._slm_store = slm_store
         self._embed = embed_fn
+        self._cache = SemanticCache(redis_client) if redis_client else None
         self._classifier = TaskClassifier(embed_fn=embed_fn)
         self._coverage = CoverageChecker(slm_registry, embed_fn)
         self._catalog = ModelCapabilityCatalog(adapter_registry, get_bandit())
@@ -131,6 +133,24 @@ class Orchestrator:
 
         # Pre-compute embedding once — reused by classifier, coverage checker, and bandit
         query_embedding = await self._embed(query)
+
+        # ── Semantic cache check (short-circuit on hit) ───────────────
+        if self._cache:
+            try:
+                cached = await self._cache.get(query, query_embedding)
+                if cached and isinstance(cached, dict):
+                    output = OrchestratorOutput(**{
+                        **output.model_dump(),
+                        **{k: v for k, v in cached.items() if k in OrchestratorOutput.model_fields},
+                        "cached_hit": True,
+                        "session_id": session_id,
+                        "query": query,
+                    })
+                    yield {"type": "step", "step": 0, "data": {"step_number": 0, "step_name": "Semantic Cache Hit", "duration_ms": int((time.monotonic() - (time.monotonic())) * 1000), "explanation": {"what": "Found semantically similar cached answer", "why": "Avoids redundant LLM calls for repeated or similar queries", "what_we_found": "Cache hit", "decision_made": "Returning cached result", "confidence": 1.0, "caveats": [], "graph_entity_ids": []}}}
+                    yield {"type": "output", "data": output.model_dump()}
+                    return
+            except Exception:
+                pass
 
         # ── Step 1: Task Classification ───────────────────────────────
         t0 = time.monotonic()
@@ -487,6 +507,13 @@ class Orchestrator:
             save_bandit()
 
         output.steps = steps
+
+        if self._cache and final_answer:
+            try:
+                await self._cache.set(query, query_embedding, output.model_dump())
+            except Exception:
+                pass
+
         yield {"type": "output", "data": output.model_dump()}
 
 

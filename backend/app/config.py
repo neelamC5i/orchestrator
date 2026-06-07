@@ -13,7 +13,6 @@ class Settings(BaseSettings):
 
     # Cloud providers (optional)
     openai_api_key: str = ""
-    anthropic_api_key: str = ""
     groq_api_key: str = ""
     hf_token: str = ""
     fred_api_key: str = ""
@@ -54,6 +53,13 @@ class Settings(BaseSettings):
     cache_ttl_news: int = 900       # 15 minutes
     cache_ttl_stable: int = 86400   # 24 hours
     cache_similarity_threshold: float = 0.92
+
+    # Upload validation
+    max_upload_size_mb: int = 100
+    allowed_upload_extensions: list[str] = [
+        ".csv", ".json", ".jsonl", ".txt", ".pdf",
+        ".xlsx", ".xls", ".parquet", ".md", ".docx", ".doc",
+    ]
 
     # Graphify
     graphify_token_budget: int = 50000

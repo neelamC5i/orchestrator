@@ -6,6 +6,7 @@ from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import text
 from app.db.database import get_db
+from app.schemas import QualityMetricsResponse
 
 router = APIRouter(prefix="/quality", tags=["quality"])
 
@@ -17,7 +18,7 @@ async def _corpus_dir(job_id: str, db: AsyncSession) -> str:
     return f"corpus_store/{job_id}"
 
 
-@router.get("/{job_id}/metrics")
+@router.get("/{job_id}/metrics", response_model=QualityMetricsResponse)
 async def quality_metrics(job_id: str, db: AsyncSession = Depends(get_db)):
     corpus_dir = await _corpus_dir(job_id, db)
     from app.modules.graph.graph_builder import GraphBuilder

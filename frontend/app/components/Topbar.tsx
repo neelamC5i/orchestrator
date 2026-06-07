@@ -13,6 +13,7 @@ const STEPS = [
   { label: "⑤ Results",    path: "/recommendations" },
   { label: "Wiki",          path: "/wiki" },
   { label: "Quality",       path: "/quality" },
+  { label: "Templates",     path: "/templates" },
 ];
 
 export default function Topbar() {

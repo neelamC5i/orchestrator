@@ -8,11 +8,12 @@ from fastapi import APIRouter, Depends
 from sqlalchemy.ext.asyncio import AsyncSession
 from app.adapters.registry import get_adapter_registry
 from app.db.database import get_db
+from app.schemas import ModelsListResponse, BanditStatusResponse, InsightsResponse
 
 router = APIRouter(prefix="/models", tags=["models"])
 
 
-@router.get("")
+@router.get("", response_model=ModelsListResponse)
 async def list_models(db: AsyncSession = Depends(get_db)):
     registry = get_adapter_registry()
     models = await registry.list_all_models()
@@ -60,7 +61,7 @@ async def list_models(db: AsyncSession = Depends(get_db)):
     }
 
 
-@router.get("/bandit-status")
+@router.get("/bandit-status", response_model=BanditStatusResponse)
 async def bandit_status():
     """Return current LinUCB arm strengths and convergence state for all observed models."""
     from app.modules.slm_factory.bandit import get_bandit
@@ -100,7 +101,7 @@ async def bandit_status():
     }
 
 
-@router.get("/insights/{task_type}")
+@router.get("/insights/{task_type}", response_model=InsightsResponse)
 async def model_insights(task_type: str):
     """
     Nash equilibrium + bandit status for a given task type.

@@ -154,6 +154,45 @@ class ModelsListResponse(BaseModel):
     count: int = 0
 
 
+class BanditArm(BaseModel):
+    model_id: str
+    theta_norm: float = 0.0
+    estimated_reward: float = 0.0
+    observations: int = 0
+    explore_width: float = 0.0
+    converged: bool = False
+
+
+class BanditStatusResponse(BaseModel):
+    arms: list[BanditArm] = []
+    total_arms: int = 0
+    scoring_note: str = ""
+
+
+class InsightsCandidate(BaseModel):
+    model: str
+    provider: str
+    benchmark: float = 0.0
+    availability: float = 0.0
+    bandit_score: float = 0.0
+    composite_score: float = 0.0
+    is_available: bool = False
+    observations: int = 0
+    benchmark_source: str = ""
+    nash_probability: float = 0.0
+    is_dominant: bool = False
+
+
+class InsightsResponse(BaseModel):
+    task_type: str
+    valid_task_types: list[str] = []
+    candidates: list[InsightsCandidate] = []
+    dominant_model: str | None = None
+    nash_explanation: str = ""
+    formula: str = ""
+    game_theory_note: str = ""
+
+
 # ── Feedback ──────────────────────────────────────────────────────────────────
 
 class FeedbackResponse(BaseModel):

@@ -17,6 +17,7 @@ from sqlalchemy import text
 
 from app.db.database import get_db
 from app.config import get_settings
+from app.schemas import IngestResponse, TestConnectionResponse, CorpusItem
 
 settings = get_settings()
 router = APIRouter(prefix="/data", tags=["data"])
@@ -32,7 +33,7 @@ class DBCredentials(BaseModel):
     connection_string: str = ""
 
 
-@router.post("/ingest")
+@router.post("/ingest", response_model=IngestResponse)
 async def ingest(
     files: list[UploadFile] = File(default=[]),
     db_type: str = Form(default=""),
@@ -74,10 +75,24 @@ async def ingest(
     corpus_dir = Path(settings.corpus_store_path) / job_id
     corpus_dir.mkdir(parents=True, exist_ok=True)
 
+    max_bytes = settings.max_upload_size_mb * 1024 * 1024
+    allowed_ext = {e.lower() for e in settings.allowed_upload_extensions}
+
     saved_files = []
     for upload in files:
-        dest = corpus_dir / upload.filename
+        ext = Path(upload.filename).suffix.lower() if upload.filename else ""
+        if ext not in allowed_ext:
+            raise HTTPException(
+                status_code=422,
+                detail=f"File type '{ext}' not allowed. Accepted: {', '.join(sorted(allowed_ext))}",
+            )
         content = await upload.read()
+        if len(content) > max_bytes:
+            raise HTTPException(
+                status_code=413,
+                detail=f"File '{upload.filename}' exceeds {settings.max_upload_size_mb}MB limit",
+            )
+        dest = corpus_dir / upload.filename
         dest.write_bytes(content)
         saved_files.append(str(dest))
 
@@ -117,7 +132,7 @@ async def ingest(
     return {"job_id": job_id, "status": "queued", "file_count": len(saved_files)}
 
 
-@router.post("/test-connection")
+@router.post("/test-connection", response_model=TestConnectionResponse)
 async def test_connection(creds: DBCredentials):
     """Test external DB connectivity without storing credentials."""
     import asyncio
@@ -185,7 +200,7 @@ async def test_connection(creds: DBCredentials):
         return {"success": False, "message": str(exc)}
 
 
-@router.get("/corpora")
+@router.get("/corpora", response_model=list[CorpusItem])
 async def list_corpora(db: AsyncSession = Depends(get_db)):
     """List the best (most recent) completed corpus per domain."""
     result = await db.execute(text("""

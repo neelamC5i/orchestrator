@@ -15,6 +15,7 @@ correct behaviour for low-information feedback.
 """
 from fastapi import APIRouter
 from pydantic import BaseModel, Field
+from app.schemas import FeedbackResponse
 
 router = APIRouter(prefix="/feedback", tags=["feedback"])
 
@@ -30,7 +31,7 @@ class FeedbackRequest(BaseModel):
     query_embedding: list[float] | None = None
 
 
-@router.post("")
+@router.post("", response_model=FeedbackResponse)
 async def record_feedback(req: FeedbackRequest):
     """
     Update the LinUCB bandit arm for the given model with a user-driven reward.

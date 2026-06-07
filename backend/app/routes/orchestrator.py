@@ -130,11 +130,18 @@ async def ask(request: AskRequest, db: AsyncSession = Depends(get_db)):
     available = await registry.list_all_models()
     available_names = [m.model_id for m in available]
 
+    import redis.asyncio as aioredis
+    try:
+        redis_client = aioredis.from_url(settings.redis_url, decode_responses=True)
+    except Exception:
+        redis_client = None
+
     orchestrator = Orchestrator(
         adapter_registry=registry,
         slm_registry=slm_registry,
         slm_store=slm_store,
         embed_fn=_get_embedding,
+        redis_client=redis_client,
     )
 
     query_embedding = await _get_embedding(request.query)
