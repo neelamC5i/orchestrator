@@ -15,6 +15,7 @@ from sqlalchemy import text
 from typing import List, Optional
 
 from app.db.database import get_db
+from app.config import get_settings
 from app.schemas import WikiReviewsResponse
 
 router = APIRouter(prefix="/wiki", tags=["wiki"])
@@ -27,7 +28,7 @@ async def _corpus_dir(job_id: str, db: AsyncSession) -> str:
     )).fetchone()
     if not row:
         raise HTTPException(status_code=404, detail="job not found")
-    return f"corpus_store/{job_id}"
+    return get_settings().corpus_dir(job_id)
 
 
 class ReviewDecision(BaseModel):

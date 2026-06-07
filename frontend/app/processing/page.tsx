@@ -8,7 +8,7 @@ import LayerDetailPanel from "../components/LayerDetailPanel";
 import ApprovalGate, { type GateStep } from "../components/ApprovalGate";
 import AchievementToast, { fireAchievement } from "../components/AchievementToast";
 import SLMStudio, { type SLMConfig } from "../components/SLMStudio";
-import { API_BASE } from "../lib/api";
+import { API_BASE, apiFetch, parseApiError } from "../lib/api";
 
 interface EpochEntry { epoch: number; loss: number; }
 
@@ -191,7 +191,7 @@ function ProcessingPage() {
   const [pipelineReviewPending, setPipelineReviewPending] = useState(false);
   const deferredGraphDoneRef = useRef<{ entities: string[]; entityCount: number } | null>(null);
 
-  const esRef = useRef<EventSource | null>(null);
+  const esRef = useRef<AbortController | null>(null);
   const jobIdRef = useRef<string>("");
 
   const addLog = (msg: string) => setLog(prev => [...prev.slice(-80), msg]);
@@ -211,7 +211,7 @@ function ProcessingPage() {
   const fetchKpis = useCallback(async (jobId: string) => {
     const API = API_BASE;
     try {
-      const res = await fetch(`${API}/api/v1/pipeline/${jobId}/kpis`);
+      const res = await apiFetch(`${API}/api/v1/pipeline/${jobId}/kpis`);
       if (res.ok) {
         const data = await res.json();
         setKpis(data.kpis ?? kpis);
@@ -294,7 +294,7 @@ function ProcessingPage() {
   }, [formatPipelineLog, mapBackendSteps]);
 
   const fetchSnapshot = useCallback(async (API: string, jobId: string, opts?: { reviewTerminal?: boolean }) => {
-    const res = await fetch(`${API}/api/v1/pipeline/${jobId}/snapshot`);
+    const res = await apiFetch(`${API}/api/v1/pipeline/${jobId}/snapshot`);
     if (!res.ok) throw new Error(`Snapshot HTTP ${res.status}`);
     const data = await res.json() as PipelineSnapshot;
     applySnapshot(data, opts);
@@ -304,7 +304,7 @@ function ProcessingPage() {
   // Fetch available models on mount
   useEffect(() => {
     const API = API_BASE;
-    fetch(`${API}/api/v1/models`)
+    apiFetch(`${API}/api/v1/models`)
       .then(r => r.json())
       .then(d => {
         const raw: {model_id?:string; name?:string; provider?:string; status?:string}[] = d.models ?? d ?? [];
@@ -338,7 +338,7 @@ function ProcessingPage() {
 
     let disposed = false;
     let streamed = false;
-    let streamEs: EventSource | null = null;
+    let streamAbort: AbortController | null = null;
     let refreshTimer: ReturnType<typeof setInterval> | null = null;
     let sseRetryCount = 0;
     const SSE_MAX_RETRIES = 5;
@@ -349,74 +349,94 @@ function ProcessingPage() {
       setNodeStatus("import", "running");
       addLog("Import pipeline started — streaming progress...");
 
-      const connectSSE = () => {
+      const connectSSE = async () => {
         if (disposed) return;
-        streamEs = new EventSource(`${API}/api/v1/data/progress/${jobId}`);
-        esRef.current = streamEs;
+        streamAbort?.abort();
+        const controller = new AbortController();
+        streamAbort = controller;
+        esRef.current = controller;
         sseRetryCount = 0;
 
-      refreshTimer = setInterval(() => {
-        fetchSnapshot(API, jobId).catch(() => {});
-      }, 5000);
+        refreshTimer = setInterval(() => {
+          fetchSnapshot(API, jobId).catch(() => {});
+        }, 5000);
 
-      streamEs.onmessage = async (e) => {
-        const ev = JSON.parse(e.data);
-        setOverallPct(ev.overall_pct ?? 0);
-        setEtaSeconds(ev.eta_seconds ?? null);
-        if (ev.file_count) setStats(p => ({ ...p, files: ev.file_count }));
-        if (ev.entity_count) setStats(p => ({ ...p, entities: ev.entity_count }));
-        if (ev.community_count) setStats(p => ({ ...p, communities: ev.community_count }));
+        try {
+          const res = await apiFetch(`${API}/api/v1/data/progress/${jobId}`, { signal: controller.signal });
+          if (!res.ok || !res.body) throw new Error(`SSE HTTP ${res.status}`);
+          const reader = res.body.getReader();
+          const decoder = new TextDecoder();
+          let buffer = "";
 
-        const status = ev.status;
-        if (ev.logs?.length) {
-          setLog((ev.logs as PipelineSnapshotLog[]).map(formatPipelineLog).slice(-100));
-        } else {
-          addLog(`[${status}] ${ev.overall_pct ?? 0}%`);
-        }
+          while (true) {
+            const { done, value } = await reader.read();
+            if (done || disposed) break;
+            buffer += decoder.decode(value, { stream: true });
+            const lines = buffer.split("\n");
+            buffer = lines.pop() ?? "";
+            for (const line of lines) {
+              if (!line.startsWith("data: ")) continue;
+              const data = line.slice(6).trim();
+              if (!data) continue;
 
-        if (ev.pipeline_steps?.steps?.length > 0) {
-          const mappedLayers = mapBackendSteps(ev.pipeline_steps.steps);
-          setLayers(mappedLayers);
-          setNodes(mapLayersToCanvasNodes(mappedLayers));
-          extractKpisFromLayers(mappedLayers);
-        }
+              const ev = JSON.parse(data);
+              setOverallPct(ev.overall_pct ?? 0);
+              setEtaSeconds(ev.eta_seconds ?? null);
+              if (ev.file_count) setStats(p => ({ ...p, files: ev.file_count }));
+              if (ev.entity_count) setStats(p => ({ ...p, entities: ev.entity_count }));
+              if (ev.community_count) setStats(p => ({ ...p, communities: ev.community_count }));
 
-        if (ev.pipeline_steps?.steps) {
-          const stepsData = ev.pipeline_steps.steps as Record<string, unknown>[];
-          const uploadDone = stepsData.find(s => s.id === "upload" && s.status === "done");
-          if (uploadDone && !gatesShownRef.current.has("upload_ach")) {
-            gatesShownRef.current.add("upload_ach");
-            fireAchievement("📥", "Data imported!", "Files uploaded and tracked");
+              const status = ev.status;
+              if (ev.logs?.length) {
+                setLog((ev.logs as PipelineSnapshotLog[]).map(formatPipelineLog).slice(-100));
+              } else {
+                addLog(`[${status}] ${ev.overall_pct ?? 0}%`);
+              }
+
+              if (ev.pipeline_steps?.steps?.length > 0) {
+                const mappedLayers = mapBackendSteps(ev.pipeline_steps.steps);
+                setLayers(mappedLayers);
+                setNodes(mapLayersToCanvasNodes(mappedLayers));
+                extractKpisFromLayers(mappedLayers);
+              }
+
+              if (ev.pipeline_steps?.steps) {
+                const stepsData = ev.pipeline_steps.steps as Record<string, unknown>[];
+                const uploadDone = stepsData.find(s => s.id === "upload" && s.status === "done");
+                if (uploadDone && !gatesShownRef.current.has("upload_ach")) {
+                  gatesShownRef.current.add("upload_ach");
+                  fireAchievement("📥", "Data imported!", "Files uploaded and tracked");
+                }
+                const entitiesDone = stepsData.find(s => s.id === "entities" && s.status === "done");
+                if (entitiesDone && !gatesShownRef.current.has("entities_ach")) {
+                  gatesShownRef.current.add("entities_ach");
+                  fireAchievement("🔍", "Entities extracted!", "NLP pipeline complete");
+                }
+                const graphDone = stepsData.find(s => s.id === "graph_build" && s.status === "done");
+                if (graphDone && !gatesShownRef.current.has("graph_ach")) {
+                  gatesShownRef.current.add("graph_ach");
+                  fireAchievement("🕸️", "Knowledge graph built!", "Graph construction complete");
+                }
+              }
+
+              if (status === "graph_done") {
+                fireAchievement("🕸️", "Pipeline complete!", `${ev.entity_count ?? 0} entities — review all layers before continuing`);
+                await fetchSnapshot(API, jobId, { reviewTerminal: true }).catch(() => {});
+                controller.abort();
+                if (refreshTimer) clearInterval(refreshTimer);
+                addLog("Pipeline complete — review all layers, then confirm to continue.");
+                return;
+              } else if (status === "failed") {
+                await fetchSnapshot(API, jobId, { reviewTerminal: true }).catch(() => {});
+                addLog(`Pipeline failed: ${ev.error ?? ""}`);
+                controller.abort();
+                if (refreshTimer) clearInterval(refreshTimer);
+                return;
+              }
+            }
           }
-          const entitiesDone = stepsData.find(s => s.id === "entities" && s.status === "done");
-          if (entitiesDone && !gatesShownRef.current.has("entities_ach")) {
-            gatesShownRef.current.add("entities_ach");
-            fireAchievement("🔍", "Entities extracted!", "NLP pipeline complete");
-          }
-          const graphDone = stepsData.find(s => s.id === "graph_build" && s.status === "done");
-          if (graphDone && !gatesShownRef.current.has("graph_ach")) {
-            gatesShownRef.current.add("graph_ach");
-            fireAchievement("🕸️", "Knowledge graph built!", "Graph construction complete");
-          }
-        }
-
-        if (status === "graph_done") {
-          fireAchievement("🕸️", "Pipeline complete!", `${ev.entity_count ?? 0} entities — review all layers before continuing`);
-          await fetchSnapshot(API, jobId, { reviewTerminal: true }).catch(() => {});
-          streamEs?.close();
-          if (refreshTimer) clearInterval(refreshTimer);
-          addLog("Pipeline complete — review all layers, then confirm to continue.");
-        } else if (status === "failed") {
-          await fetchSnapshot(API, jobId, { reviewTerminal: true }).catch(() => {});
-          addLog(`Pipeline failed: ${ev.error ?? ""}`);
-          streamEs?.close();
-          if (refreshTimer) clearInterval(refreshTimer);
-        }
-      };
-
-        streamEs.onerror = () => {
-          streamEs?.close();
-          if (disposed) return;
+        } catch (err: unknown) {
+          if (disposed || (err instanceof DOMException && err.name === "AbortError")) return;
           sseRetryCount++;
           if (sseRetryCount > SSE_MAX_RETRIES) {
             addLog("SSE connection lost — max retries reached. Use the browser refresh to retry.");
@@ -425,7 +445,7 @@ function ProcessingPage() {
           const delay = Math.min(1000 * Math.pow(2, sseRetryCount - 1), 15000);
           addLog(`SSE connection lost — reconnecting in ${Math.round(delay / 1000)}s (attempt ${sseRetryCount}/${SSE_MAX_RETRIES})...`);
           setTimeout(connectSSE, delay);
-        };
+        }
       };
 
       connectSSE();
@@ -464,8 +484,8 @@ function ProcessingPage() {
     return () => {
       disposed = true;
       if (refreshTimer) clearInterval(refreshTimer);
-      streamEs?.close();
-      esRef.current?.close();
+      streamAbort?.abort();
+      esRef.current?.abort();
     };
   }, []);
 
@@ -485,7 +505,7 @@ function ProcessingPage() {
     setNodeStatus("build-ai", "running", "checking…");
 
     try {
-      const forCorpusRes = await fetch(`${API}/api/v1/slm/for-corpus?job_id=${jobId}`);
+      const forCorpusRes = await apiFetch(`${API}/api/v1/slm/for-corpus?job_id=${jobId}`);
       const forCorpus = await forCorpusRes.json();
 
       setSlmExistsRecord(forCorpus.exists ? forCorpus : null);
@@ -507,7 +527,7 @@ function ProcessingPage() {
       try {
         const params = new URLSearchParams({ domain_label: domainLabel });
         if (taskId) params.set("task_id", taskId);
-        const res = await fetch(`${API}/api/v1/slm/status?${params}`);
+        const res = await apiFetch(`${API}/api/v1/slm/status?${params}`);
         const data = await res.json();
         if (data.status === "done") {
           clearInterval(slmPollRef.current!); slmPollRef.current = null;
@@ -533,7 +553,7 @@ function ProcessingPage() {
     setSlmBuildStatus("queued");
     setNodeStatus("build-ai", "running", "building…");
     try {
-      const res = await fetch(`${API}/api/v1/slm/build`, {
+      const res = await apiFetch(`${API}/api/v1/slm/build`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -578,7 +598,7 @@ function ProcessingPage() {
       };
       if (modelOverrides) body.model_overrides = modelOverrides;
 
-      const res = await fetch(`${API}/api/v1/orchestrator/ask`, {
+      const res = await apiFetch(`${API}/api/v1/orchestrator/ask`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(body),
@@ -678,7 +698,7 @@ function ProcessingPage() {
     setApproving(true);
     const API = API_BASE;
     try {
-      await fetch(`${API}/api/v1/slm/approve-install`, {
+      await apiFetch(`${API}/api/v1/slm/approve-install`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ model_id: buildModelId }),

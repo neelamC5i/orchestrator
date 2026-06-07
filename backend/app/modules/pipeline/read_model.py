@@ -78,7 +78,8 @@ def resolve_corpus_dir(job_id: str, metadata: dict[str, Any], graph_path: str | 
             return str(path.parent)
         except Exception:
             pass
-    return str(metadata.get("corpus_dir") or os.path.join("corpus_store", job_id))
+    from app.config import get_settings
+    return str(metadata.get("corpus_dir") or get_settings().corpus_dir(job_id))
 
 
 def normalize_layers(progress: dict[str, Any], status: str) -> list[dict[str, Any]]:

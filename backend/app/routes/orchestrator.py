@@ -145,6 +145,26 @@ async def ask(request: AskRequest, db: AsyncSession = Depends(get_db)):
     )
 
     query_embedding = await _get_embedding(request.query)
+    session_id = request.session_id or str(uuid.uuid4())
+
+    try:
+        await db.execute(
+            text("""
+                INSERT INTO sessions (session_id, session_name, domain_tags, user_goal, corpus_path)
+                VALUES (:sid, :name, :tags, :goal, :corpus)
+                ON CONFLICT (session_id) DO UPDATE SET updated_at = NOW()
+            """),
+            {
+                "sid": session_id,
+                "name": request.query[:120],
+                "tags": [domain_label],
+                "goal": request.query,
+                "corpus": request.job_id or "",
+            },
+        )
+        await db.commit()
+    except Exception:
+        await db.rollback()
 
     async def event_stream():
         # ── Pre-stream: emit model_context so the UI knows what state the AI is in ──
@@ -197,9 +217,13 @@ async def ask(request: AskRequest, db: AsyncSession = Depends(get_db)):
         })
         yield f"data: {_ctx}\n\n"
 
+        import time as _time
+        _started_ms = int(_time.time() * 1000)
+        _last_event: dict[str, Any] = {}
+
         async for event in orchestrator.run(
             query=request.query,
-            session_id=request.session_id or str(uuid.uuid4()),
+            session_id=session_id,
             graph_context=graph_context,
             wiki_articles=wiki_articles,
             domain_label=domain_label,
@@ -209,7 +233,37 @@ async def ask(request: AskRequest, db: AsyncSession = Depends(get_db)):
             system_prompt=request.system_prompt,
             scoring_weights=request.scoring_weights.normalised(),
         ):
+            _last_event = event
             yield f"data: {json.dumps(event)}\n\n"
+
+        _elapsed_ms = int(_time.time() * 1000) - _started_ms
+        try:
+            await db.execute(
+                text("""
+                    INSERT INTO query_history
+                        (session_id, query, task_category, task_type, slm_used,
+                         response_summary, hallucination_rate, task_completion_rate,
+                         latency_ms, token_count_in, token_count_out)
+                    VALUES (:sid, :query, :cat, :ttype, :slm, :summary,
+                            :halluc, :completion, :latency, :tok_in, :tok_out)
+                """),
+                {
+                    "sid": session_id,
+                    "query": request.query[:4096],
+                    "cat": _last_event.get("domain_label") or domain_label,
+                    "ttype": _last_event.get("task_type", ""),
+                    "slm": _last_event.get("slm_model_id", ""),
+                    "summary": (_last_event.get("answer") or "")[:1000],
+                    "halluc": _last_event.get("hallucination_rate"),
+                    "completion": _last_event.get("task_completion_rate"),
+                    "latency": _elapsed_ms,
+                    "tok_in": _last_event.get("token_count_in"),
+                    "tok_out": _last_event.get("token_count_out"),
+                },
+            )
+            await db.commit()
+        except Exception:
+            await db.rollback()
 
     return StreamingResponse(
         event_stream(),

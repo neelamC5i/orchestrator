@@ -190,7 +190,8 @@ def _fallback_graph_from_schema(metadata):
 @celery_app.task(name="run_ingest_pipeline", bind=True, max_retries=2)
 def run_ingest_pipeline(self, job_id):  # noqa: C901
     pipeline_started = time.time()
-    corpus_dir = f"corpus_store/{job_id}"
+    from app.config import get_settings as _get_settings
+    corpus_dir = _get_settings().corpus_dir(job_id)
     processed_dir = ""
 
     steps = [
@@ -228,7 +229,7 @@ def run_ingest_pipeline(self, job_id):  # noqa: C901
     if stored_corpus_dir and os.path.isdir(stored_corpus_dir):
         corpus_dir = stored_corpus_dir
     else:
-        corpus_dir = f"corpus_store/{job_id}"
+        corpus_dir = _get_settings().corpus_dir(job_id)
     os.makedirs(corpus_dir, exist_ok=True)
     processed_dir = os.path.join(corpus_dir, "processed")
     os.makedirs(processed_dir, exist_ok=True)
@@ -659,7 +660,8 @@ def run_ingest_pipeline(self, job_id):  # noqa: C901
 @celery_app.task(name="run_db_pipeline", bind=True, max_retries=1)
 def run_db_pipeline(self, job_id, conn_params):  # noqa: C901
     started = time.time()
-    corpus_dir = f"corpus_store/{job_id}"
+    from app.config import get_settings as _get_settings
+    corpus_dir = _get_settings().corpus_dir(job_id)
     os.makedirs(corpus_dir, exist_ok=True)
     processed_dir = os.path.join(corpus_dir, "processed")
     os.makedirs(processed_dir, exist_ok=True)
@@ -835,7 +837,8 @@ def run_db_pipeline(self, job_id, conn_params):  # noqa: C901
 @celery_app.task(name="reindex_pipeline", bind=True, max_retries=2)
 def reindex_pipeline(self, job_id):
     started = time.time()
-    corpus_dir = f"corpus_store/{job_id}"
+    from app.config import get_settings as _get_settings
+    corpus_dir = _get_settings().corpus_dir(job_id)
     processed_dir = os.path.join(corpus_dir, "processed")
 
     steps = [

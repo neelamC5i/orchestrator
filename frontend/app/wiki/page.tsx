@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState, useCallback } from "react";
-import { API_BASE as API } from "../lib/api";
+import { API_BASE as API, apiFetch } from "../lib/api";
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 interface Corpus {
@@ -53,7 +53,7 @@ export default function WikiPage() {
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    fetch(`${API}/api/v1/data/corpora`)
+    apiFetch(`${API}/api/v1/data/corpora`)
       .then((r) => r.json())
       .then((d) => {
         const list: Corpus[] = Array.isArray(d) ? d : d.corpora ?? [];
@@ -69,7 +69,7 @@ export default function WikiPage() {
     setLoading(true);
     setError(null);
     setSelectedArticle(null);
-    fetch(`${API}/api/v1/data/wiki/${selectedJob}`)
+    apiFetch(`${API}/api/v1/data/wiki/${selectedJob}`)
       .then((r) => r.json())
       .then((d) => {
         const list: WikiArticle[] = d.articles ?? [];
@@ -84,7 +84,7 @@ export default function WikiPage() {
 
   const fetchReviews = useCallback(() => {
     if (!selectedJob) return;
-    fetch(`${API}/api/v1/wiki/${selectedJob}/reviews?status=pending&limit=100`)
+    apiFetch(`${API}/api/v1/wiki/${selectedJob}/reviews?status=pending&limit=100`)
       .then((r) => r.json())
       .then((d) => setReviews(d.reviews ?? []))
       .catch(() => {});
@@ -93,7 +93,7 @@ export default function WikiPage() {
   useEffect(() => { if (tab === "reviews") fetchReviews(); }, [tab, fetchReviews]);
 
   const submitReview = (review_id: string, decision: "approve" | "reject") => {
-    fetch(`${API}/api/v1/wiki/${selectedJob}/review/${review_id}`, {
+    apiFetch(`${API}/api/v1/wiki/${selectedJob}/review/${review_id}`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ decision, decided_by: "user" }),

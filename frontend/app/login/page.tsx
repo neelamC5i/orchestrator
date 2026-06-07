@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
-import { API_BASE } from "../lib/api";
+import { API_BASE, parseApiError } from "../lib/api";
 
 export default function LoginPage() {
   const router = useRouter();
@@ -30,8 +30,7 @@ export default function LoginPage() {
         body: JSON.stringify({ username: username.trim(), password }),
       });
       if (!res.ok) {
-        const data = await res.json().catch(() => ({ detail: "Login failed" }));
-        setError(data.detail ?? "Invalid username or password.");
+        setError(await parseApiError(res));
         setLoading(false);
         return;
       }
@@ -40,7 +39,8 @@ export default function LoginPage() {
       localStorage.setItem("orch_refresh_token", data.refresh_token);
       localStorage.setItem("orch_logged_in", "true");
       localStorage.setItem("orch_user", username.trim());
-      document.cookie = "orch_logged_in=true; path=/; SameSite=Lax";
+      const secure = window.location.protocol === "https:" ? "; Secure" : "";
+      document.cookie = `orch_logged_in=true; path=/; SameSite=Lax${secure}`;
       router.replace("/dashboard");
     } catch {
       setError("Unable to reach the server. Is the backend running?");

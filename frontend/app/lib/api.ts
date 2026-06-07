@@ -37,6 +37,15 @@ function clearAuth() {
  * Wrapper around fetch that automatically attaches the JWT Authorization
  * header and handles 401 with a silent token refresh + retry.
  */
+export async function parseApiError(res: Response): Promise<string> {
+  try {
+    const body = await res.json();
+    return body?.error?.message ?? body?.detail ?? `HTTP ${res.status}`;
+  } catch {
+    return res.statusText || `HTTP ${res.status}`;
+  }
+}
+
 export async function apiFetch(input: RequestInfo | URL, init?: RequestInit): Promise<Response> {
   const token = getAccessToken();
   const headers = new Headers(init?.headers);

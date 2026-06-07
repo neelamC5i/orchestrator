@@ -5,6 +5,7 @@ from pydantic import BaseModel
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import text
 from app.db.database import get_db
+from app.config import get_settings
 
 router = APIRouter(prefix="/repair", tags=["repair"])
 
@@ -13,7 +14,7 @@ async def _corpus_dir(job_id: str, db: AsyncSession) -> str:
     row = (await db.execute(text("SELECT job_id FROM ingest_jobs WHERE job_id=:id"), {"id": job_id})).fetchone()
     if not row:
         raise HTTPException(status_code=404, detail="job not found")
-    return f"corpus_store/{job_id}"
+    return get_settings().corpus_dir(job_id)
 
 
 class SuppressRelationRequest(BaseModel):

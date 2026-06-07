@@ -2,7 +2,7 @@
 
 import { useState, useCallback } from "react";
 import { useRouter } from "next/navigation";
-import { API_BASE } from "./lib/api";
+import { API_BASE, apiFetch, parseApiError } from "./lib/api";
 
 const DOMAIN_PRESETS = [
   { id: "manufacturing",  label: "Manufacturing",   icon: "🏭", desc: "Production, supply chain, quality control" },
@@ -76,7 +76,7 @@ export default function WorkspacePage() {
     setIsConnecting(true);
     setSchemaPreview(null);
     try {
-      const res = await fetch(`${API_BASE}/api/v1/data/test-connection`, {
+      const res = await apiFetch(`${API_BASE}/api/v1/data/test-connection`, {
         method: "POST", headers: { "Content-Type": "application/json" },
         body: JSON.stringify(dbCreds),
       });
@@ -110,7 +110,8 @@ export default function WorkspacePage() {
         form.append("username", dbCreds.username);
         form.append("password", dbCreds.password);
       }
-      const res  = await fetch(`${API_BASE}/api/v1/data/ingest`, { method: "POST", body: form });
+      const res  = await apiFetch(`${API_BASE}/api/v1/data/ingest`, { method: "POST", body: form });
+      if (!res.ok) { setError(await parseApiError(res)); setIsSubmitting(false); return; }
       const data = await res.json();
       sessionStorage.setItem("job_id",       data.job_id);
       sessionStorage.setItem("domain_label", effectiveDomain);

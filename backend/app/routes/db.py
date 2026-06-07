@@ -9,11 +9,37 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import text
 from typing import Optional
 from app.db.database import get_db
+from app.config import get_settings
 
 router = APIRouter(prefix="/db", tags=["db"])
 
-# In-memory session store (replace with Redis or DB in production)
-_db_sessions: dict = {}
+_DB_SESSION_TTL = 3600  # 1 hour
+_local_engines: dict = {}  # non-serializable db_engine objects, keyed by db_id
+
+
+def _redis():
+    import redis
+    return redis.from_url(get_settings().redis_url, decode_responses=True)
+
+
+def _save_session(db_id: str, data: dict):
+    serializable = {k: v for k, v in data.items() if k != "db_engine"}
+    try:
+        r = _redis()
+        r.setex(f"db_session:{db_id}", _DB_SESSION_TTL, json.dumps(serializable, default=str))
+    except Exception:
+        pass
+
+
+def _load_session(db_id: str) -> dict | None:
+    try:
+        r = _redis()
+        raw = r.get(f"db_session:{db_id}")
+        if raw:
+            return json.loads(raw)
+    except Exception:
+        pass
+    return None
 
 
 class DBConnectRequest(BaseModel):
@@ -47,17 +73,19 @@ async def db_connect(body: DBConnectRequest):
     except Exception as exc:
         raise HTTPException(status_code=400, detail=f"Connection failed: {exc}")
 
-    _db_sessions[db_id] = {
+    session_data = {
         "db_id": db_id,
         "engine": body.engine,
         "dbname": body.dbname,
         "host": body.host,
         "port": body.port,
+        "user": body.user,
         "job_id": body.job_id,
         "metadata": metadata,
-        "db_engine": db_engine,
         "status": "connected",
     }
+    _local_engines[db_id] = db_engine
+    _save_session(db_id, session_data)
     return {
         "db_id": db_id,
         "status": "connected",
@@ -86,9 +114,23 @@ async def db_test(body: DBConnectRequest):
 
 
 def _get_session(db_id: str) -> dict:
-    session = _db_sessions.get(db_id)
+    session = _load_session(db_id)
     if not session:
         raise HTTPException(status_code=404, detail="db session not found")
+    if db_id not in _local_engines and session.get("engine"):
+        from app.modules.db.db_connector import connect_db
+        try:
+            _local_engines[db_id] = connect_db(
+                engine=session["engine"],
+                host=session.get("host") or "localhost",
+                port=session.get("port") or 5432,
+                dbname=session.get("dbname") or "",
+                user=session.get("user") or "",
+                password="",
+            )
+        except Exception:
+            pass
+    session["db_engine"] = _local_engines.get(db_id)
     return session
 
 
@@ -121,6 +163,7 @@ async def db_profile(db_id: str):
         implicit_rels = detect_implicit_relationships(metadata)
         session["profile"] = profiled
         session["implicit_relationships"] = implicit_rels
+        _save_session(db_id, session)
     return {
         "db_id": db_id,
         "profile": session["profile"],

@@ -874,7 +874,7 @@ async def get_canonical_graph(
     if not row:
         raise HTTPException(status_code=404, detail="job not found")
 
-    corpus_dir = f"corpus_store/{job_id}"
+    corpus_dir = get_settings().corpus_dir(job_id)
     from app.modules.graph.graph_builder import GraphBuilder
     gb = GraphBuilder(corpus_dir)
     canonical = gb.get_canonical_graph()
@@ -895,7 +895,7 @@ async def ingestion_report(
     if not row:
         raise HTTPException(status_code=404, detail="job not found")
 
-    corpus_dir = f"corpus_store/{job_id}"
+    corpus_dir = get_settings().corpus_dir(job_id)
     processed_dir = _os.path.join(corpus_dir, "processed")
 
     scorecard_files = []

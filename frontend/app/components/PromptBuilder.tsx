@@ -3,7 +3,7 @@
 import { useState, useEffect, useRef } from "react";
 import { getProcessPlan, getProcessMeta, type ProcessStep, type ProcessStepMeta, type PathType as ProcessPathType } from "../lib/processTemplates";
 import { loadCustomTemplates, customTemplateToProcessSteps, type CustomTemplate } from "../lib/customTemplates";
-import { API_BASE } from "../lib/api";
+import { API_BASE, apiFetch } from "../lib/api";
 
 interface StoredCorpus {
   job_id: string; domain_label: string; file_count: number; entity_count: number; created_at: string;
@@ -561,17 +561,17 @@ export default function PromptBuilder({ corpus, onUsePrompt, onManual }: PromptB
     setLoadingData(true);
     const jobParam = corpus.job_id ? `&job_id=${encodeURIComponent(corpus.job_id)}` : "";
     Promise.all([
-      fetch(`${API}/api/v1/data/wiki/${corpus.job_id}`)
+      apiFetch(`${API}/api/v1/data/wiki/${corpus.job_id}`)
         .then(r=>r.ok?r.json():{articles:[]})
         .then((d:{articles:WikiArticle[]})=>setWikiArticles(d.articles?.slice(0,12)??[]))
         .catch(()=>{}),
-      fetch(`${API}/api/v1/slm/registry`)
+      apiFetch(`${API}/api/v1/slm/registry`)
         .then(r=>r.ok?r.json():{slms:[]})
         .then((d:{slms:{domain_label:string}[]})=>
           setHasSLM((d.slms??[]).some(s=>s.domain_label===corpus.domain_label))
         )
         .catch(()=>{}),
-      fetch(`${API}/api/v1/slm/suggestions?domain_label=${encodeURIComponent(corpus.domain_label)}${jobParam}`)
+      apiFetch(`${API}/api/v1/slm/suggestions?domain_label=${encodeURIComponent(corpus.domain_label)}${jobParam}`)
         .then(r => r.ok ? r.json() : Promise.resolve({ suggestions: [], source: "fallback" }))
         .then((d: {suggestions?: (string | {label?: string; desc?: string; prompt?: string})[]; source?: string}) => {
           const raw = Array.isArray(d.suggestions) ? d.suggestions : [];

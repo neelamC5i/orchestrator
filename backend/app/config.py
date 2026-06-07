@@ -1,3 +1,4 @@
+import os
 from pydantic_settings import BaseSettings
 from functools import lru_cache
 from pathlib import Path
@@ -41,7 +42,7 @@ class Settings(BaseSettings):
 
     # Embedding model for coverage checker
     embedding_model: str = "nomic-embed-text"
-    embedding_dim: int = 1536
+    embedding_dim: int = 768
 
     # Quality thresholds
     dedup_threshold: float = 0.8
@@ -72,9 +73,14 @@ class Settings(BaseSettings):
     auth_username: str = "admin"
     auth_password: str = "orchestrator"
 
+    cors_origins: str = "http://localhost:3000"
+
     class Config:
         env_file = ".env"
         env_file_encoding = "utf-8"
+
+    def corpus_dir(self, job_id: str) -> str:
+        return os.path.join(self.corpus_store_path, job_id)
 
     def ensure_storage_dirs(self):
         Path(self.slm_store_path).mkdir(parents=True, exist_ok=True)

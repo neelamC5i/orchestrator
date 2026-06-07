@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState, useCallback } from "react";
-import { API_BASE as API } from "../lib/api";
+import { API_BASE as API, apiFetch } from "../lib/api";
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 interface Corpus { job_id: string; domain_label?: string; entity_count?: number; file_count?: number; }
@@ -125,7 +125,7 @@ export default function QualityPage() {
   const [hoveredNode, setHoveredNode] = useState<PlacedNode | null>(null);
 
   useEffect(() => {
-    fetch(`${API}/api/v1/data/corpora`)
+    apiFetch(`${API}/api/v1/data/corpora`)
       .then((r) => r.json())
       .then((d) => {
         const list: Corpus[] = Array.isArray(d) ? d : d.corpora ?? [];
@@ -141,8 +141,8 @@ export default function QualityPage() {
     setLoading(true);
     setError(null);
     Promise.all([
-      fetch(`${API}/api/v1/data/graph/${selectedJob}`).then((r) => r.ok ? r.json() : null),
-      fetch(`${API}/api/v1/quality/${selectedJob}/metrics`).then((r) => r.ok ? r.json() : null),
+      apiFetch(`${API}/api/v1/data/graph/${selectedJob}`).then((r) => r.ok ? r.json() : null),
+      apiFetch(`${API}/api/v1/quality/${selectedJob}/metrics`).then((r) => r.ok ? r.json() : null),
     ])
       .then(([graphData, qualityData]) => {
         if (graphData) setGraph(graphData);

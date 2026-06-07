@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import { API_BASE } from "../lib/api";
+import { API_BASE, apiFetch } from "../lib/api";
 
 // ─── Types ───────────────────────────────────────────────────────────────────
 type PathType = "BUILDER" | "RESEARCHER" | "ANALYST" | "AUDITOR" | "SUMMARIZER";
@@ -393,7 +393,7 @@ export default function PlanningPage() {
     if (dl) {
       const params = new URLSearchParams({ domain_label: dl });
       if (jid) params.set("job_id", jid);
-      fetch(`${API_BASE}/api/v1/slm/suggestions?${params}`)
+      apiFetch(`${API_BASE}/api/v1/slm/suggestions?${params}`)
         .then(r => r.json())
         .then(data => {
           const raw: { label?: string; desc?: string; prompt?: string }[] = data.suggestions ?? [];

@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import AchievementToast from "../components/AchievementToast";
-import { API_BASE } from "../lib/api";
+import { API_BASE, apiFetch } from "../lib/api";
 
 interface DashboardStats {
   tokens_saved?: number;
@@ -125,17 +125,17 @@ export default function DashboardPage() {
 
     setLoading(true);
     setFetchErrors([]);
-    fetch(`${API}/api/v1/slm/stats`)
+    apiFetch(`${API}/api/v1/slm/stats`)
       .then(r => r.json()).then(setStats)
       .catch(() => setFetchErrors(prev => [...prev, "Stats unavailable"]))
       .finally(() => setLoading(false));
-    fetch(`${API}/api/v1/slm/learning-progress`)
+    apiFetch(`${API}/api/v1/slm/learning-progress`)
       .then(r => r.json()).then(setLearning)
       .catch(() => setFetchErrors(prev => [...prev, "Learning progress unavailable"]));
-    fetch(`${API}/api/v1/models/bandit-status`)
+    apiFetch(`${API}/api/v1/models/bandit-status`)
       .then(r => r.json()).then(d => setBanditArms(d.arms ?? []))
       .catch(() => setFetchErrors(prev => [...prev, "Bandit status unavailable"]));
-    fetch(`${API}/api/v1/models/insights/general_reasoning`)
+    apiFetch(`${API}/api/v1/models/insights/general_reasoning`)
       .then(r => r.json()).then(setNashInsights)
       .catch(() => setFetchErrors(prev => [...prev, "Nash insights unavailable"]));
   }, []);
@@ -143,7 +143,7 @@ export default function DashboardPage() {
   const loadNashTask = (task: string) => {
     setNashTask(task);
     setNashInsights(null);
-    fetch(`${API}/api/v1/models/insights/${task}`)
+    apiFetch(`${API}/api/v1/models/insights/${task}`)
       .then(r => r.json()).then(setNashInsights).catch(() => {});
   };
 
