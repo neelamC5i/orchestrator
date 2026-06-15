@@ -1,20 +1,19 @@
 # Product Requirements Document (PRD)
 
-### AI Orchestrator — Domain SLM Factory
+### Domain Harnessing System — AI Orchestrator & SLM Factory
 
-**Author:** Engineering Team | **Date:** 2026-06-07 | **Version:** 1.0 | **Status:** Draft
+**Author:** Engineering Team | **Date:** 2026-06-07 | **Version:** 1.1 | **Status:** Draft
 
 ---
 
 ## Document Control & Change Log
 
 | Version | Date | Author | Changes | Approvers |
-
 |---------|------|--------|---------|-----------|
-
 | 1.0 | 2026-06-07 | Engineering Team | Initial PRD hydrated from codebase | — |
+| 1.1 | 2026-06-15 | Engineering Team | Integrated Harness Layer architecture, Outcome Layer, Memory Layer, Responsible AI, 6-phase roadmap, User Scorecard | — |
 
-**Distribution List:** Engineering, Product, ML/AI Team Leads
+**Distribution List:** Engineering, Product, ML/AI Team Leads, Enterprise Architecture
 
 **Review Cycle:** Monthly or upon major feature milestone
 
@@ -22,13 +21,17 @@
 
 ## 1. Executive Summary
 
-The **AI Orchestrator — Domain SLM Factory** is a self-improving AI platform that transforms raw domain corpora into actionable, grounded intelligence. It ingests documents, databases, and web content; constructs knowledge graphs via NLP-driven entity extraction and community detection; optionally distills domain-specific Small Language Models (SLMs) via QLoRA fine-tuning; and orchestrates multi-model query execution with reinforcement-learned routing.
+The **Domain Harnessing System** is a domain-specific AI operating system that transforms raw enterprise corpora into actionable, grounded intelligence through a unified **Harness Layer** — the core innovation that binds knowledge engineering, model orchestration, workspace isolation, and governance into a single execution framework.
 
-The system addresses a critical gap: enterprises possess vast domain knowledge locked in unstructured documents, databases, and tribal expertise. Generic LLMs hallucinate on domain-specific queries, while fine-tuning is prohibitively complex for non-ML teams. This platform automates the entire pipeline — from raw data to deployed domain model — with human-in-the-loop quality gates at every critical decision point.
+**Domain Harnessing System = Domain Knowledge × AI Orchestration (Harness Layer)**
 
-The target users are domain experts, data teams, and technical analysts in knowledge-intensive verticals (CPG/supply chain, manufacturing, healthcare, finance, IT) who need AI-grounded answers without ML engineering expertise. The platform runs fully locally via Ollama for data-sensitive environments, with optional cloud LLM providers for enhanced capability.
+It is not just a chatbot or a RAG pipeline. It is an enterprise-grade AI operating system that understands domain context, builds connected knowledge systems, spins up personalized workspaces, orchestrates AI agents for workflows, and ensures governance, memory, reuse, and portability across organizations.
 
-The expected impact is a 10x reduction in time-to-insight for domain queries, elimination of hallucinated answers through graph-grounded synthesis, and continuous model improvement via LinUCB bandit feedback loops. The system is currently deployed as a self-hosted Docker Compose stack with a single-user auth model.
+The system addresses a critical gap: enterprises possess vast domain knowledge locked in unstructured documents, databases, and tribal expertise. Generic LLMs hallucinate on domain-specific queries, while fine-tuning is prohibitively complex for non-ML teams. The Harness Layer solves this by providing the operational framework around AI models — ensuring every AI action is grounded in enterprise knowledge, follows organizational rules, and produces defensible, auditable outcomes.
+
+The platform ingests documents, databases, and web content; constructs knowledge graphs via NLP-driven entity extraction and community detection; distills domain-specific Small Language Models (SLMs) via QLoRA fine-tuning; routes queries through multi-model orchestration with reinforcement-learned routing; and tracks all decisions through a scored outcome layer. It runs fully locally via Ollama for data-sensitive environments, with optional cloud LLM providers for enhanced capability.
+
+The target users are domain experts, data teams, and technical analysts in knowledge-intensive verticals (CPG/supply chain, manufacturing, healthcare, finance, IT) who need AI-grounded answers without ML engineering expertise. The expected impact is a 10x reduction in time-to-insight, elimination of hallucinated answers through graph-grounded synthesis, continuous model improvement via bandit feedback loops, and a defensible audit trail for every AI-assisted business decision.
 
 ---
 
@@ -38,7 +41,7 @@ The expected impact is a 10x reduction in time-to-insight for domain queries, el
 
 **Current State:**
 
-Domain experts query generic LLMs (ChatGPT, Claude) and receive plausible-sounding but ungrounded answers. They manually cross-reference outputs against internal documents, databases, and spreadsheets. Building domain-specific AI models requires ML engineering teams, GPU infrastructure, and months of iteration.
+Domain experts query generic LLMs (ChatGPT, Claude) and receive plausible-sounding but ungrounded answers. They manually cross-reference outputs against internal documents, databases, and spreadsheets. Building domain-specific AI models requires ML engineering teams, GPU infrastructure, and months of iteration. Even when AI is deployed, there is no operational framework ensuring it behaves correctly, consistently, and responsibly within the enterprise environment.
 
 **Pain Points:**
 
@@ -50,6 +53,10 @@ Domain experts query generic LLMs (ChatGPT, Claude) and receive plausible-soundi
 
 * **No model accountability:** When multiple models are available, there's no systematic way to route tasks to the best-suited model or learn from past performance.
 
+* **No operational harness:** AI models lack enterprise context — they don't inherently know which data is trustworthy, which systems to access, how to decompose complex problems, or how to validate their own outputs.
+
+* **No outcome defensibility:** Business decisions informed by AI have no audit trail, no scoring mechanism, and no traceability back to source knowledge.
+
 **Evidence:** The included synthetic CPG supply chain dataset (453 documents) demonstrates the use case: trade promotions, vendor scorecards, demand forecasts, and category playbooks that a generic LLM cannot accurately reason over without grounding.
 
 ### 2.2 Opportunity & Market Context
@@ -57,20 +64,17 @@ Domain experts query generic LLMs (ChatGPT, Claude) and receive plausible-soundi
 **Market Trends:**
 
 - Enterprises adopting RAG and fine-tuning for domain AI (Gartner: 40% of enterprises will deploy domain-adapted LLMs by 2027)
-
 - Shift toward local/private inference (Ollama, vLLM) for data sovereignty
-
 - Emergence of Small Language Models (SLMs) as cost-effective alternatives to frontier models
-
 - Growing demand for human-in-the-loop AI workflows with explainability
+- Rise of agentic AI architectures where the harness/orchestration layer receives equal emphasis as the underlying model
 
 **Strategic Alignment:**
 
 - Enables "AI for every domain team" without centralized ML bottleneck
-
-- Positions as the operating system between raw enterprise data and domain-grounded AI answers
-
+- Positions as the domain-specific AI operating system between raw enterprise data and defensible business outcomes
 - Supports fully air-gapped deployments for regulated industries
+- Builds toward plug-and-play enterprise deployment across verticals
 
 ---
 
@@ -78,35 +82,51 @@ Domain experts query generic LLMs (ChatGPT, Claude) and receive plausible-soundi
 
 ### 3.1 Vision Statement
 
-Every domain team can transform their proprietary knowledge into a self-improving AI specialist — without writing ML code or exposing data to third parties.
+A Domain-Aware AI Operating System that creates personalized workspaces, runs AI agents on structured enterprise knowledge, and produces reusable, defensible business outcomes across organizations.
 
 ### 3.2 Core Value Proposition
 
 **For** domain experts and technical analysts in knowledge-intensive industries  
-
 **Who** need AI-grounded answers over proprietary data without ML expertise  
+**The** Domain Harnessing System  
+**Is a** domain-specific AI operating system with a unified Harness Layer  
+**That** automatically builds knowledge graphs, trains domain SLMs, routes queries to optimal models, and produces scored, auditable outcomes  
+**Unlike** generic RAG tools, standalone chatbots, or manual fine-tuning workflows  
+**Our product** provides the complete operational framework — from raw corpus to defensible business decision — with workspace isolation, persistent memory, human-in-the-loop governance, and continuous self-improvement
 
-**The** AI Orchestrator  
+### 3.3 The Harness Layer (Core Innovation)
 
-**Is a** self-hosted intelligent pipeline platform  
+The Harness Layer is the central architectural innovation. It transforms powerful language models from simple text generators into reliable, governable, production-ready business agents. While AI models provide reasoning and language capabilities, the Harness Layer provides:
 
-**That** automatically builds knowledge graphs, trains domain SLMs, and routes queries to the optimal model  
+* **Context Management:** Determines what information from the knowledge graph, metadata catalog, wiki, historical conversations, and business systems should be presented to the model at any given moment — ensuring neither information starvation nor context overload.
 
-**Unlike** generic RAG tools or manual fine-tuning workflows  
+* **Tool Integration:** Enables the AI to interact with databases, APIs, analytics platforms, and enterprise applications rather than relying solely on parametric knowledge.
 
-**Our product** provides end-to-end automation from raw corpus to deployed domain model with human-in-the-loop quality gates and continuous bandit-based learning
+* **Memory & State Management:** Stores decisions, workflows, past solutions, and ongoing investigations — enabling multi-step enterprise processes rather than isolated question-answer exchanges.
 
-### 3.3 Core Differentiators
+* **Planning & Decomposition:** Automatically breaks complex business requests into smaller, manageable tasks executed systematically — like an experienced business analyst investigating, gathering evidence, analyzing, and synthesizing conclusions.
+
+* **Verification & Guardrails:** Validates every response against trusted enterprise data, business rules, confidence thresholds, and compliance requirements before delivery. Significantly reduces hallucinations and operational risks.
+
+* **Observability & Orchestration:** Complete visibility into how the AI operates — every retrieval, tool call, decision path, validation result, and agent interaction is logged and monitored for audit, troubleshooting, and governance.
+
+> The AI model supplies intelligence. The knowledge graph supplies enterprise knowledge. The Harness Layer supplies control, reliability, transparency, and trust.
+
+### 3.4 Core Differentiators
 
 * **Full-pipeline automation:** From raw file upload to deployed, queryable domain SLM in one workflow — no separate tooling needed.
+
+* **Harness Layer architecture:** A unified operational framework that ensures AI behaves correctly, consistently, and responsibly within the enterprise environment — not just a chatbot wrapper.
 
 * **Bandit-learned model routing:** LinUCB multi-armed bandit selects the optimal model per task type and improves with every user feedback signal.
 
 * **Graph-grounded synthesis:** All answers cite knowledge graph entities, with hallucination detection that cross-references against the canonical graph.
 
+* **Outcome defensibility:** Every AI-assisted decision produces a scored, auditable trail with traceability back to source knowledge and responsible AI checks.
+
 * **Human-in-the-loop gates:** Approval gates at dedup, quality, graph, and model deployment prevent silent pipeline failures.
 
-### 3.4 Product Principles
+### 3.5 Product Principles
 
 * **Local-first, cloud-optional:** Full functionality with only Ollama; cloud providers enhance but are never required.
 
@@ -116,21 +136,19 @@ Every domain team can transform their proprietary knowledge into a self-improvin
 
 * **Self-improvement as default:** The system gets better with use via bandit learning, SLM retraining signals, and entity resolution feedback.
 
+* **Outcomes over outputs:** The system doesn't just generate text — it produces defensible, scored business outcomes with full provenance.
+
 ---
 
 ## 4. Project Classification & Context
 
 ### 4.1 Project Metadata
 
-* **Technical Type:** Web Application (full-stack) + ML Pipeline
-
+* **Technical Type:** Web Application (full-stack) + ML Pipeline + AI Operating System
 * **Deployment Model:** Self-hosted (Docker Compose), single-node or multi-container
-
-* **Domain:** Enterprise AI / Knowledge Management / MLOps
-
-* **Complexity:** High — spans NLP, ML training, real-time streaming, knowledge graphs, and multi-model orchestration
-
-* **Stage:** Feature Enhancement (pipeline visibility overhaul recently completed)
+* **Domain:** Enterprise AI / Knowledge Management / MLOps / Agentic AI
+* **Complexity:** High — spans NLP, ML training, real-time streaming, knowledge graphs, multi-model orchestration, and enterprise governance
+* **Stage:** Feature Enhancement (pipeline visibility overhaul recently completed; Harness Layer formalization in progress)
 
 ### 4.2 Domain Context
 
@@ -138,9 +156,21 @@ Every domain team can transform their proprietary knowledge into a self-improvin
 
 **Data Sensitivity:** Processes arbitrary enterprise documents — may contain PII, financial data, or trade secrets. All data stays within the deployment boundary (local filesystem + PostgreSQL).
 
-**Governance Needs:** Approval gates provide audit points; query history logged in `query_history` table with full routing decisions.
+**Governance Needs:** Approval gates provide audit points; query history logged in `query_history` table with full routing decisions; Outcome Layer provides decision traceability and responsible AI protocols.
 
 **Ecosystem Context:** Integrates with Ollama for local inference, optional OpenAI/Anthropic/Groq for cloud models, PostgreSQL+pgvector for vector storage, Redis for task queue and pipeline state.
+
+### 4.3 Core Platform Components
+
+| Component | Responsibility |
+|-----------|---------------|
+| Data + Knowledge Engine | ETL, KG builder, tagging, wiki generator, FAISS indexing |
+| Domain Registry System | Domains, rules, datasets, ontology, SLM registry |
+| Workspace Engine | User sandbox, domain-scoped injection, session isolation |
+| Harness Agent Orchestrator | LLM routing, planner, tools, memory, context filtering |
+| Outcome Engine | Decision tracking, KPI scoring, workflow templates, export |
+| Observability & Governance | Audit logs, compliance, responsible AI protocols |
+| UI Layer | Chat, planner, visual outputs, pipeline monitoring |
 
 ---
 
@@ -298,6 +328,16 @@ Every domain team can transform their proprietary knowledge into a self-improvin
 
 * **Bandit convergence:** Task types where bandit has >100 observations — Target: all 8 task types within 30 days
 
+#### Knowledge Graph Accuracy Metrics
+
+* **Ontological Conformance Rate:** Percentage of graph nodes/edges passing SHACL validation — Target: >99.5% before advancing from Data Readiness phase
+
+* **Generation Confidence:** Aggregate cosine consistency and low semantic entropy for extracted assertions — Target: >0.85 mean confidence score
+
+* **Estimated Global Accuracy:** Wilson-method statistical bound on overall KG correctness — Target: >90% lower bound at 95% confidence
+
+* **Composite Accuracy_DHS:** Weighted composite of the three vectors — Target: defined per domain (configurable via pipeline config)
+
 #### Operational Metrics
 
 * **Pipeline duration:** Time from ingest to `graph_done` — Target: <5 min for 50-file corpus
@@ -369,52 +409,57 @@ Every domain team can transform their proprietary knowledge into a self-improvin
 | Quality dashboard | Per-corpus quality metrics, graph density, registry health | P1 | Observability |
 
 | Dashboard analytics | Bandit arms, Nash equilibrium, session history, learning curves | P1 | Platform health monitoring |
+| Decision audit trail | Full provenance chain per query — task classification, model selection, source entities, confidence | P0 | Outcome defensibility (existing) |
+| Hallucination scoring | Per-answer hallucination rate via graph-grounded verification | P0 | Responsible AI (existing) |
+| Continuous reinforcement | User feedback → bandit reward → improved routing | P0 | Self-improvement loop (existing) |
 
-#### Explicitly Out of Scope (Current)
+#### Explicitly Out of Scope (Current — On Roadmap)
 
-* **Multi-user RBAC:** Auth is single-user env-based credentials; no user management system.
-
-* **Team collaboration:** No shared workspaces, concurrent editing, or permission model.
-
-* **Production auth:** No JWT/OAuth/SSO — cookie-based login only.
-
-* **Database migrations:** No Alembic; schema managed via `init.sql` only.
-
+* **Multi-user RBAC:** Auth is single-user env-based credentials; no user management system. → *Phase 2*
+* **Team collaboration:** No shared workspaces, concurrent editing, or permission model. → *Phase 3*
+* **Persistent memory layer:** Cross-session memory is localStorage only; no server-side memory store. → *Phase 2*
+* **User Scorecard:** No per-user activity tracking or outcome scoring. → *Phase 4*
+* **Production auth:** No JWT/OAuth/SSO — cookie-based login only. → *Phase 2*
+* **Database migrations:** No Alembic; schema managed via `init.sql` only. → *Phase 2*
 * **CI/CD pipeline:** No automated testing, linting, or deployment automation.
-
-* **Mobile support:** Desktop-first UI, not optimized for mobile viewports.
-
-* **Multi-tenancy:** Single-tenant architecture with shared database.
+* **Mobile support:** Desktop-first UI, not optimized for mobile viewports. → *Phase 6*
+* **Multi-tenancy:** Single-tenant architecture with shared database. → *Phase 5*
 
 ### 7.2 Future Roadmap (Post-MVP)
 
-**Phase 2 (Months 3–6):**
-
+**Phase 2 — Harness Agent (Months 2–4):**
+* Planning engine with multi-step task decomposition
+* Tool execution framework (database queries, API calls, analytics)
+* Memory store for cross-session persistence (decisions, workflows, past solutions)
+* Context filtering — precision injection of relevant-only graph data
 * Multi-user auth with JWT + RBAC
-
 * Alembic database migrations
 
-* Scheduled re-ingestion and incremental graph updates
-
+**Phase 3 — Collaboration Layer (Months 4–7):**
+* Multi-user + AI shared context (collaborative workspaces)
+* Real-time co-editing of prompts and workflow outputs
+* Shared investigation threads with AI participation
 * API rate limiting and usage tracking
 
-**Phase 3 (Months 6–12):**
+**Phase 4 — Outcome Engine (Months 7–10):**
+* Decision tracking & action capture at every AI interaction
+* User Scorecard — which user used the system for which problem, with what outcome
+* Reusable workflow templates with versioning
+* Export/import of domain workspaces across regions and organizations
+* Responsible AI protocols (bias detection, audit trails, traceability checks)
 
+**Phase 5 — Scale Domains (Months 10–14):**
 * Multi-tenant architecture with data isolation
-
-* Integration marketplace (Slack, Teams, Jira connectors)
-
+* Domain marketplace: supply chain, risk, marketing, finance, procurement
 * Automated evaluation benchmarks per domain
-
 * Model A/B testing framework
 
-**Exploratory (12+ months):**
-
+**Phase 6 — Enterprise OS Layer (14+ months):**
+* Full Domain Operating System — plug-and-play enterprise deployment
 * Federated learning across tenant SLMs
-
 * Real-time streaming ingestion (Kafka/event-driven)
-
 * Visual graph editor for manual knowledge curation
+* Voice interface and mobile support
 
 ### 7.3 Platform & Environment Requirements
 
@@ -612,7 +657,18 @@ Every domain team can transform their proprietary knowledge into a self-improvin
 
 * **FR2.10 Canonical graph build:** Entity resolution, deduplication (MinHash LSH), community detection.
 
-* **FR2.11 Graph consistency:** Cross-source linking, confidence scoring.
+* **FR2.11 Graph consistency & accuracy evaluation:** Three-phase KG accuracy pipeline executed immediately after canonical graph build, producing a composite `Accuracy_DHS` metric:
+
+  - **FR2.11a Deterministic Structural Gatekeeper:** Validate the generated graph against a SHACL shapes graph using pySHACL + rdflib. Outputs an *Ontological_Conformance_Score* (percentage of compliant nodes). If score falls below threshold (default 99.5%), the pipeline executes an immediate halt with a detailed `sh:ValidationReport` indicating non-conformant nodes.
+    - *Hard gate:* Pipeline cannot advance to wiki/SLM if conformance < threshold.
+
+  - **FR2.11b Objective Semantic Confidence:** Calculate a continuous *Generation_Confidence_Score* (0–1) using the llm2kg framework's deterministic mathematical approach — measuring token perplexity, semantic entropy across generation instances, and cosine consistency of vector embeddings. No subjective LLM-as-judge evaluation.
+    - *Output:* Per-triple confidence score + aggregated graph-level confidence.
+
+  - **FR2.11c Global Reliability Estimation:** Apply utility-weighted sampling and the Wilson score interval method (replacing the flawed Wald method) via the reliable-kg-estimation approach. Outputs an *Estimated_Global_Accuracy* percentage with a mathematically guaranteed confidence bound for massive-scale graphs.
+    - *Output:* Point estimate + confidence interval (e.g., "94.2% ± 1.3% at 95% confidence").
+
+  - **Composite metric:** `Accuracy_DHS = f(Ontological_Conformance, Generation_Confidence, Estimated_Global_Accuracy)` — surfaced at the graph approval gate and persisted to `ingest_jobs.metadata`.
 
 * **FR2.12 Wiki generation:** Auto-generate explainability pages per entity/community.
 
@@ -627,12 +683,19 @@ Every domain team can transform their proprietary knowledge into a self-improvin
 #### FR3.0 Pipeline Control Plane
 
 * **FR3.1 Approval gates:** The system shall pause at configurable gates (import, dedup, quality, graph, model) and await user approval via `POST /pipeline/{job_id}/approve/{step}`.
+  - At the **graph gate** (post-Layer 11, before wiki/SLM), the approval modal shall present the synthesized `Accuracy_DHS` composite metric alongside its three constituent vectors:
+    - Ontological Conformance: Pass/Fail + percentage (e.g., "99.7% — 3 non-conformant nodes")
+    - Generation Confidence: 0–1 score with entropy breakdown
+    - Estimated Global Accuracy: point estimate ± confidence interval
+  - The user must explicitly approve advancement if any vector is below its recommended threshold.
 
 * **FR3.2 Pipeline pause/resume:** Users can pause (`POST /pipeline/{job_id}/pause`) and resume the pipeline at any point.
 
-* **FR3.3 Configuration override:** Users can modify pipeline parameters (thresholds, chunk size) via `PATCH /pipeline/{job_id}/config` stored in Redis.
+* **FR3.3 Configuration override:** Users can modify pipeline parameters (thresholds, chunk size, KG accuracy thresholds) via `PATCH /pipeline/{job_id}/config` stored in Redis.
 
 * **FR3.4 Real-time progress:** SSE stream at `GET /data/progress/{job_id}` emits per-layer status updates with percentage completion.
+
+* **FR3.5 Accuracy hard-halt:** If Ontological Conformance falls below the configured threshold (default 99.5%), the pipeline shall halt automatically without requiring manual gate rejection, logging the `sh:ValidationReport` as an error artifact.
 
   - *Priority:* P0
 
@@ -760,7 +823,61 @@ Every domain team can transform their proprietary knowledge into a self-improvin
 
 * **FR11.4 Session history:** Last 20 sessions with timestamps and domains (localStorage).
 
+* **FR11.5 KG Accuracy Dashboard:** Visual widgets displaying the composite `Accuracy_DHS` equation components per corpus:
+  - Ontological Conformance gauge with Pass/Fail indicator and historical trend
+  - Generation Confidence distribution (per-triple histogram + aggregate score)
+  - Global Accuracy estimate with confidence interval visualization
+  - Detailed `sh:ValidationReport` viewer — expandable table showing exactly where the graph failed to adhere to the target SHACL schema (non-conformant node, violated shape, severity)
+  - Comparative view across corpora to track accuracy improvement over re-ingestions
+
   - *Priority:* P1
+
+### 9.6 Outcome Layer (User/Persona Level)
+
+#### FR12.0 Decision Tracking & Action Capture
+* **FR12.1 Decision log:** The system shall capture every AI-assisted decision with timestamp, user, query, model used, confidence score, and source entities cited.
+  - *Acceptance Criteria:* All orchestrator outputs produce a structured decision record persisted to `query_history`
+  - *Priority:* P0 (existing via query_history)
+  - *User Story:* "As a domain analyst, I need to trace back any AI recommendation to its source knowledge so I can defend my business decisions."
+
+* **FR12.2 Action capture:** The system shall record user actions on AI outputs (approved, modified, rejected, escalated) to build an outcome trail.
+  - *Priority:* P1
+
+* **FR12.3 User Scorecard:** The system shall maintain a per-user scorecard showing: problems addressed, domains queried, outcomes generated, feedback provided, and AI accuracy over time.
+  - *Acceptance Criteria:* Dashboard displays user activity summary with problem-to-outcome mapping
+  - *Priority:* P1
+
+#### FR13.0 Performance & KPI Measurement
+* **FR13.1 Outcome scoring:** Each orchestrator output shall receive a composite score based on hallucination rate, confidence, source coverage, and user feedback.
+  - *Priority:* P1
+
+* **FR13.2 KPI tracking:** The system shall track domain-level KPIs (time-to-insight, answer reuse rate, model accuracy trend) and surface them on the dashboard.
+  - *Priority:* P1
+
+#### FR14.0 Memory & Persistence Layer
+* **FR14.1 Session memory:** The system shall persist decisions, workflows, and investigation state across sessions within a domain workspace.
+  - *Acceptance Criteria:* User can resume an investigation from where they left off; prior context is available to the orchestrator
+  - *Priority:* P1 (currently partial via localStorage/sessionStorage)
+
+* **FR14.2 Memory checkpoints:** The system shall create persistent checkpoints at key decision points, enabling rollback and replay of reasoning chains.
+  - *Priority:* P2
+
+* **FR14.3 Cross-session reuse:** Past solutions and workflows shall be discoverable and reusable for similar future problems within the same domain.
+  - *Priority:* P2
+
+#### FR15.0 Responsible AI Protocols
+* **FR15.1 Bias detection:** The system shall flag potential bias in model outputs when source data is skewed or when confidence varies significantly across demographic or categorical dimensions.
+  - *Priority:* P2
+
+* **FR15.2 Audit trail:** Every AI decision path shall be fully reconstructible — from query to source retrieval to model selection to synthesis to delivery.
+  - *Acceptance Criteria:* Decision Trace tab provides complete provenance chain; exportable as audit report
+  - *Priority:* P0 (existing via Decision Trace)
+
+* **FR15.3 Traceability checks:** The system shall validate that every cited fact in a synthesized answer maps to a specific node/edge in the canonical knowledge graph.
+  - *Priority:* P0 (existing via hallucination detector)
+
+* **FR15.4 Continuous reinforcement:** User feedback shall feed back into both model routing (bandit) and outcome quality scoring, creating a defensible improvement loop.
+  - *Priority:* P0 (existing via feedback → bandit)
 
 ---
 
@@ -848,17 +965,30 @@ Every domain team can transform their proprietary knowledge into a self-improvin
 
 * **NFR8.4 Hot reload:** Dev mode supports hot-reload for both backend (`--reload`) and frontend (`next dev`).
 
-### 10.5 Compatibility
+### 10.5 Governance & Responsible AI
 
-#### NFR9.0 Platform Compatibility
+#### NFR10.0 Auditability
+* **NFR10.1 Decision provenance:** Every AI-generated output shall be traceable to its source entities, model used, confidence score, and decision path.
+* **NFR10.2 Immutable audit log:** Query history records shall be append-only; no deletion without explicit admin action.
+* **NFR10.3 Export capability:** Audit trails shall be exportable as structured JSON for compliance reporting.
 
-* **NFR9.1 Browser support:** Chrome 90+, Firefox 90+, Edge 90+ (desktop).
+#### NFR11.0 Responsible AI
+* **NFR11.1 Source grounding:** No synthesized fact shall be presented without reference to a knowledge graph entity or explicit uncertainty flag.
+* **NFR11.2 Confidence transparency:** All outputs shall display confidence scores; low-confidence responses shall be visually distinguished.
+* **NFR11.3 Human override:** Users shall always have the ability to reject, modify, or override AI recommendations.
+* **NFR11.4 No autonomous action:** The system shall not take irreversible actions (data deletion, external API calls with side effects) without explicit user approval.
 
-* **NFR9.2 Docker runtime:** Compatible with Docker Engine 20+ and Docker Compose v2.
+### 10.6 Compatibility
 
-* **NFR9.3 OS support:** Backend runs on Linux (production), macOS/Windows (development).
+#### NFR12.0 Platform Compatibility
 
-* **NFR9.4 Python version:** Requires Python 3.12 exactly (type hint syntax dependency).
+* **NFR12.1 Browser support:** Chrome 90+, Firefox 90+, Edge 90+ (desktop).
+
+* **NFR12.2 Docker runtime:** Compatible with Docker Engine 20+ and Docker Compose v2.
+
+* **NFR12.3 OS support:** Backend runs on Linux (production), macOS/Windows (development).
+
+* **NFR12.4 Python version:** Requires Python 3.12 exactly (type hint syntax dependency).
 
 ---
 
@@ -948,17 +1078,37 @@ Every domain team can transform their proprietary knowledge into a self-improvin
 
 ```
 
-**Architecture Pattern:** Modular monolith backend with async task offloading (Celery) and event-driven frontend (SSE).
+**Architecture Pattern:** Modular monolith backend with async task offloading (Celery) and event-driven frontend (SSE), unified by the Harness Layer.
+
+**Layered Architecture:**
+
+```
+LAYER 1: DATA & KNOWLEDGE
+  └── Corpus Ingestion → Processing Pipeline → Knowledge Graph → Wiki → FAISS
+
+LAYER 2: HARNESS (Core Intelligence)
+  └── Context Filtering → Task Classification → Model Routing → Tool Execution
+      └── Planning & Decomposition → Memory Management → Verification & Guardrails
+
+LAYER 3: ORCHESTRATION & EXECUTION
+  └── Multi-LLM Dispatch → Sub-task Execution → Answer Synthesis → Hallucination Check
+
+LAYER 4: OUTCOME (User/Persona Level)
+  └── Decision Tracking → Performance & KPI Measurement → Memory Checkpoints
+      └── Responsible AI Protocols → Continuous Reinforcement → Scored Auditable Outcomes
+```
 
 **Key Components:**
 
 * **FastAPI Backend:** 13 routers handling REST + SSE, async SQLAlchemy for DB, direct Ollama/cloud LLM calls for orchestration.
 
+* **Harness Layer (Orchestrator Engine):** Context filtering, task classification, coverage checking, query decomposition, model capability matching, bandit routing, hallucination detection — the operational framework that ensures AI reliability and governance.
+
 * **Celery Worker:** Long-running data pipeline (14 layers) and SLM training jobs, communicating progress via PostgreSQL JSONB updates.
 
-* **Redis:** Celery broker, pipeline gate state (`gate:{job_id}:{step}`), pause flags, config overrides, semantic cache.
+* **Redis:** Celery broker, pipeline gate state (`gate:{job_id}:{step}`), pause flags, config overrides, semantic cache, memory layer.
 
-* **PostgreSQL + pgvector:** Persistent storage for jobs, sessions, query history, bandit scores, SLM registry with vector similarity search.
+* **PostgreSQL + pgvector:** Persistent storage for jobs, sessions, query history, bandit scores, SLM registry, outcome tracking with vector similarity search.
 
 * **Ollama:** Local inference engine for embeddings, orchestrator queries, and deployed domain SLMs.
 
@@ -1003,6 +1153,14 @@ Every domain team can transform their proprietary knowledge into a self-improvin
 * **Embeddings:** nomic-embed-text via Ollama
 
 * **Graphs:** NetworkX, community detection
+
+* **KG Validation:** rdflib + OWL-RL (RDF/OWL graph serialization), pySHACL (deterministic SHACL shapes validation)
+
+* **KG Confidence:** llm2kg mathematical framework (token perplexity, semantic entropy, cosine consistency equations) — adapted to operate against PostgreSQL/NetworkX graph representation rather than native Neo4j
+
+* **KG Reliability:** reliable-kg-estimation (Wilson score interval method, utility-weighted sampling for massive-scale accuracy bounds)
+
+> **Engineering Note:** The llm2kg and reliable-kg-estimation frameworks are natively designed for Neo4j/RDF stores. The implementation must adapt their mathematical core (entropy calculations, sampling algorithms) to operate against the existing PostgreSQL + NetworkX graph representation without requiring a graph database migration.
 
 #### Data Storage
 
@@ -1294,7 +1452,15 @@ Upload → `corpus_store/{job_id}/` filesystem → 14-layer pipeline (Celery) �
 
 ## 17. Innovation & Novel Approaches
 
-### Pattern 1: Bandit-Learned Model Routing (LinUCB)
+### Pattern 1: The Harness Layer Architecture
+
+**Description:** A unified operational framework positioned between the AI models and the enterprise environment. The Harness manages context injection, tool integration, memory, planning, verification, and observability — ensuring the AI doesn't just know things, but behaves correctly, consistently, and responsibly.
+
+**Rationale:** Modern agentic AI architectures place equal emphasis on the harness as on the underlying model. Without it, even the most advanced model behaves like an intelligent assistant that occasionally makes mistakes. With it, the model becomes an enterprise-grade AI system capable of supporting critical business operations safely.
+
+**Trade-offs:** Adds latency to each interaction (context filtering, verification steps); requires more infrastructure than a simple API wrapper; but dramatically improves reliability, governance, and trust.
+
+### Pattern 2: Bandit-Learned Model Routing (LinUCB)
 
 **Description:** Instead of static model selection, a contextual multi-armed bandit learns the optimal model per task type from user feedback, achieving Nash equilibrium allocation over time.
 
@@ -1302,23 +1468,31 @@ Upload → `corpus_store/{job_id}/` filesystem → 14-layer pipeline (Celery) �
 
 **Trade-offs:** Requires sufficient feedback volume to converge (cold-start problem); initial queries may route to suboptimal models.
 
-### Pattern 2: Coverage-Aware SLM Factory
+### Pattern 3: Coverage-Aware SLM Factory
 
 **Description:** Before answering a query, the system checks if the existing domain SLM covers the required knowledge. Three outcomes: ROUTE_MIXED (use existing), EXTEND_EXISTING (add training data), BUILD_NEW (train from scratch).
 
 **Rationale:** Avoids unnecessary retraining; enables incremental domain model growth; ensures queries only reach models with proven coverage.
 
-### Pattern 3: Graph-Grounded Hallucination Detection
+### Pattern 4: Graph-Grounded Hallucination Detection
 
 **Description:** After answer synthesis, the hallucination detector cross-references cited facts against the canonical knowledge graph. Entities and relationships not present in the graph are flagged.
 
 **Rationale:** Provides quantitative hallucination scores (not just vibes); enables user trust through transparency; feeds back into quality improvement.
 
-### Pattern 4: 14-Layer Pipeline with Human-in-the-Loop Gates
+### Pattern 5: 14-Layer Pipeline with Human-in-the-Loop Gates
 
 **Description:** The processing pipeline is decomposed into 14 auditable layers with configurable approval gates at critical decision points. Users can pause, inspect artifacts, adjust thresholds, and resume.
 
 **Rationale:** Balances automation with control; prevents silent data quality degradation; builds user trust through progressive disclosure of pipeline internals.
+
+### Pattern 6: Scored Outcome Layer
+
+**Description:** Every AI-assisted interaction produces not just an answer but a scored, auditable outcome — tracked against the user, the problem, the domain, and the source knowledge. This creates a defensible trail for enterprise decision-making.
+
+**Rationale:** Enterprises need to defend AI-assisted decisions to auditors, regulators, and stakeholders. A scored outcome with full provenance transforms AI from a convenience tool into a governance-compliant business asset.
+
+**Trade-offs:** Requires additional storage and computation for scoring; increases data retention requirements; but provides irreplaceable value for regulated industries.
 
 ---
 
@@ -1327,36 +1501,35 @@ Upload → `corpus_store/{job_id}/` filesystem → 14-layer pipeline (Celery) �
 ### Appendix A: Glossary
 
 | Term | Definition |
-
 |------|------------|
-
+| Harness Layer | The core operational framework positioned between AI models and the enterprise environment — manages context, tools, memory, planning, verification, and governance |
+| Domain Harnessing | The process of converting raw enterprise knowledge into a structured, AI-queryable, governable domain workspace |
+| Outcome Layer | The user/persona-level system that tracks decisions, scores outcomes, enforces responsible AI protocols, and produces auditable trails |
+| Memory Layer | Cross-session persistence of decisions, workflows, investigations, and past solutions for reuse |
+| User Scorecard | Per-user activity tracking showing problems addressed, domains queried, outcomes generated, and AI accuracy trends |
+| Context Filtering | The Harness Layer's capability to determine relevant vs. irrelevant knowledge graph data for precise context injection |
 | SLM | Small Language Model — a domain-specific fine-tuned model (typically 1–8B params) |
-
 | QLoRA | Quantized Low-Rank Adaptation — efficient fine-tuning technique |
-
 | LinUCB | Linear Upper Confidence Bound — contextual bandit algorithm for exploration/exploitation |
-
 | Knowledge Graph | NetworkX-based entity-relationship graph built from corpus via NER + community detection |
-
 | Canonical Graph | The deduplicated, entity-resolved, confidence-scored version of the raw knowledge graph |
-
 | Corpus | Collection of uploaded domain documents stored in `corpus_store/{job_id}/` |
-
 | Gate | A pipeline checkpoint requiring user approval before proceeding |
-
 | SSE | Server-Sent Events — HTTP streaming protocol for real-time progress updates |
-
 | pgvector | PostgreSQL extension enabling vector similarity search for embeddings |
-
 | FAISS | Facebook AI Similarity Search — in-memory vector index for semantic retrieval |
-
 | Bandit Arm | A model option within the LinUCB multi-armed bandit; each task type has its own set of arms |
-
 | Nash Equilibrium | Game-theoretic optimal allocation of queries across models (computed per task type) |
-
 | Process Path | Pre-defined prompt structure (Builder/Researcher/Analyst/Auditor/Summarizer) |
-
 | Domain Label | User-assigned identifier for a knowledge domain (e.g., "cpg_supply_chain") |
+| Workspace Isolation | Each user/domain gets a virtual domain machine containing only relevant knowledge, tasks, history, and compliance rules |
+| Responsible AI | Protocols ensuring bias detection, audit trails, traceability checks, and defensible outcomes |
+| Accuracy_DHS | Composite KG accuracy metric combining Ontological Conformance, Generation Confidence, and Estimated Global Accuracy |
+| SHACL | Shapes Constraint Language — W3C standard for validating RDF graph structure against defined shapes |
+| pySHACL | Python library for deterministic SHACL validation producing `sh:ValidationReport` artifacts |
+| Semantic Entropy | Measure of uncertainty across multiple generation instances of the same assertion — low entropy = high confidence |
+| Wilson Score Interval | Statistical method providing reliable confidence bounds for proportions, replacing the flawed Wald method for KG accuracy estimation |
+| Ontological Conformance | Percentage of graph nodes/edges that comply with the defined SHACL shapes schema |
 
 ### Appendix B: Key File Reference
 
@@ -1397,20 +1570,18 @@ Upload → `corpus_store/{job_id}/` filesystem → 14-layer pipeline (Celery) �
 ### Appendix C: Open Questions & Decisions Needed
 
 | Question | Options | Decision Maker | Due Date | Status |
-
 |----------|---------|----------------|----------|--------|
-
+| Memory Layer persistence | Redis-backed / PostgreSQL JSONB / dedicated vector store | Engineering Lead | Phase 2 | Open |
+| Outcome scoring algorithm | Weighted composite / ML-predicted / rule-based | ML Engineering + Product | Phase 4 | Open |
+| User Scorecard data model | Extend query_history / New outcome_scores table / Event sourcing | Engineering Lead | Phase 4 | Open |
 | Multi-user auth approach | JWT + RBAC / OAuth2 / SSO integration | Engineering Lead | Phase 2 | Open |
-
+| Workspace isolation strategy | Namespace per user / Separate schemas / Row-level security | Engineering Lead | Phase 3 | Open |
 | Database migration strategy | Alembic / raw SQL versioning / Prisma-style | Engineering Lead | Phase 2 | Open |
-
 | Fix Docker Compose Celery entrypoint | Change to `app.tasks` / Create `app/worker.py` shim | DevOps | Immediate | Open |
-
 | SLM registry cleanup policy | TTL-based / manual / LRU eviction | ML Engineering | Phase 2 | Open |
-
 | Frontend state management | Keep sessionStorage / Migrate to Zustand / Context API | Frontend Lead | Phase 2 | Open |
-
 | Port standardization | 3000 everywhere / 3001 for dev | Engineering | Immediate | Open |
+| Responsible AI bias detection | Statistical parity / Disparate impact / Custom domain rules | ML Engineering + Compliance | Phase 4 | Open |
 
 ---
 
